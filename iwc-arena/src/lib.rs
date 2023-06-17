@@ -22,6 +22,14 @@ impl<T> Arena<T> {
     }
 }
 
+impl<T> Default for Arena<T> {
+    fn default() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+}
+
 impl<T> Index<Idx<T>> for Arena<T> {
     type Output = T;
 

@@ -25,5 +25,6 @@ pub enum Ty {
 
 #[derive(Debug)]
 pub enum Constraint {
-    Unification(TyIdx, TyIdx),
+    UnifyDeep(usize, usize),
+    UnifySolve(usize, TyIdx),
 }

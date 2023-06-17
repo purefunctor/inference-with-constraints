@@ -11,19 +11,23 @@ impl Context {
             (Ty::Unit, Ty::Unit) => (),
             // Identity
             (Ty::Variable(a), Ty::Variable(b)) if a == b => (),
-            (Ty::Unification(a), Ty::Unification(b)) if a == b => (),
-            // Unification
-            (_, Ty::Unification(v)) => {
-                if self.occurs_check(t_idx, *v) {
-                    bail!("Infinite type occurred.");
+            (Ty::Unification(a), Ty::Unification(b)) => {
+                if a != b {
+                    self.emit_deep(*a, *b);
                 }
-                self.emit(t_idx, u_idx);
             }
-            (Ty::Unification(v), _) => {
-                if self.occurs_check(u_idx, *v) {
+            // Unification
+            (_, Ty::Unification(u)) => {
+                if self.occurs_check(t_idx, *u) {
                     bail!("Infinite type occurred.");
                 }
-                self.emit(t_idx, u_idx);
+                self.emit_solve(*u, t_idx);
+            }
+            (Ty::Unification(u), _) => {
+                if self.occurs_check(u_idx, *u) {
+                    bail!("Infinite type occurred.");
+                }
+                self.emit_solve(*u, u_idx);
             }
             // Compound types
             (Ty::Function(a, r), Ty::Function(b, s)) => {
@@ -55,7 +59,11 @@ impl Context {
         Ok(())
     }
 
-    fn emit(&mut self, t: TyIdx, u: TyIdx) {
-        self.constraints.push(Constraint::Unification(t, u));
+    fn emit_deep(&mut self, u: usize, v: usize) {
+        self.constraints.push(Constraint::UnifyDeep(u, v));
+    }
+
+    fn emit_solve(&mut self, u: usize, t: TyIdx) {
+        self.constraints.push(Constraint::UnifySolve(u, t));
     }
 }
