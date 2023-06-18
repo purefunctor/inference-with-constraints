@@ -4,6 +4,11 @@ use crate::types::{Constraint, Ty, TyIdx};
 
 use super::Context;
 
+/// The core unification algorithm.
+/// 
+/// This algorithm is as simple as unification algorithms can get, but rather
+/// than eagerly emitting substitutions, it pushes [`Constraint`]s onto the
+/// [`Context`] which are solved later.
 impl Context {
     pub fn unify(&mut self, t_idx: TyIdx, u_idx: TyIdx) -> anyhow::Result<()> {
         match (&self.ty_arena[t_idx], &self.ty_arena[u_idx]) {

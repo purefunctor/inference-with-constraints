@@ -2,6 +2,7 @@ use crate::types::{Expr, ExprIdx};
 
 use super::Context;
 
+/// Helper functions for constructing expressions.
 impl Context {
     pub fn expr_unit(&mut self) -> ExprIdx {
         self.ex_arena.allocate(Expr::Unit)
