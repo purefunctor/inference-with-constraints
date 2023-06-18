@@ -52,20 +52,19 @@ impl Context {
 
             constraints = std::mem::take(&mut self.constraints);
 
-            // TODO: prefer a regular loop here?
-            unsolved_deep = unsolved_deep
-                .into_iter()
-                .filter_map(|(u, v)| {
-                    let u_ty = unifications.get(&u);
-                    let v_ty = unifications.get(&v);
-                    if u_ty.is_some() || v_ty.is_some() {
-                        constraints.push(Constraint::UnifyDeep(u, v));
-                        None
-                    } else {
-                        Some((u, v))
-                    }
-                })
-                .collect();
+            // We verify which constraints can make more progress,
+            // but we defer solving them until the next iteration.
+            let mut unsolved_deeper = vec![];
+            for (u, v) in unsolved_deep {
+                let u_ty = unifications.get(&u);
+                let v_ty = unifications.get(&v);
+                if u_ty.is_some() || v_ty.is_some() {
+                    constraints.push(Constraint::UnifyDeep(u, v));
+                } else {
+                    unsolved_deeper.push((u, v));
+                }
+            }
+            unsolved_deep = unsolved_deeper;
 
             if constraints.is_empty() {
                 break;
