@@ -26,6 +26,7 @@ impl super::Context {
                 let x = *x;
 
                 let f_ty = self.infer(f)?;
+                let f_ty = self.instantiate_type(f_ty);
                 let x_ty = self.infer(x)?;
                 let r_ty = self.ty_unification_fresh();
                 let i_ty = self.ty_function(x_ty, r_ty);

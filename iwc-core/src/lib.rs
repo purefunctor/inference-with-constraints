@@ -3,26 +3,26 @@ pub mod types;
 
 #[cfg(test)]
 mod tests {
-    use crate::context::Context;
+    use crate::{context::Context, types::DeBrujin};
 
     #[test]
     pub fn lambda_inference() {
         let mut context = Context::default();
 
-        let identity = {
-            let a = context.expr_variable("a");
-            context.expr_lambda("a", a)
+        let identity_type = {
+            let a = context.ty_variable(DeBrujin(0));
+            let a_to_a = context.ty_function(a, a);
+            context.ty_forall(DeBrujin(1), a_to_a)
         };
 
-        let unit = context.expr_unit();
+        context.bind_type("identity", identity_type);
 
-        let identity_unit = context.expr_application(identity, unit);
+        let identity_expr = context.expr_variable("identity");
+        let impredicative = context.expr_application(identity_expr, identity_expr);
 
-        match context.infer(identity_unit) {
-            Ok(t) => println!("Inferred: {:?}", &context.ty_arena[t]),
+        match context.infer(impredicative) {
+            Ok(t) => println!("{:?}", &context.ty_arena[t]),
             Err(e) => println!("Failed: {:?}", e),
         }
-
-        context.solve().unwrap();
     }
 }

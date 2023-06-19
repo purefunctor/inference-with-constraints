@@ -5,7 +5,7 @@ use crate::types::{Constraint, Ty, TyIdx};
 use super::Context;
 
 /// The core unification algorithm.
-/// 
+///
 /// This algorithm is as simple as unification algorithms can get, but rather
 /// than eagerly emitting substitutions, it pushes [`Constraint`]s onto the
 /// [`Context`] which are solved later.
@@ -22,17 +22,23 @@ impl Context {
                 }
             }
             // Unification
-            (_, Ty::Unification(u)) => {
+            (t, Ty::Unification(u)) => {
+                if t.is_polymorphic() {
+                    bail!("Impredicative types.");
+                }
                 if self.occurs_check(t_idx, *u) {
                     bail!("Infinite type occurred.");
                 }
                 self.emit_solve(*u, t_idx);
             }
-            (Ty::Unification(u), _) => {
-                if self.occurs_check(u_idx, *u) {
+            (Ty::Unification(t), u) => {
+                if u.is_polymorphic() {
+                    bail!("Impredicative types.");
+                }
+                if self.occurs_check(u_idx, *t) {
                     bail!("Infinite type occurred.");
                 }
-                self.emit_solve(*u, u_idx);
+                self.emit_solve(*t, u_idx);
             }
             // Compound types
             (Ty::Function(a, r), Ty::Function(b, s)) => {
