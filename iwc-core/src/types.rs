@@ -4,6 +4,9 @@ use smol_str::SmolStr;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DeBrujin(pub usize);
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Rank(pub usize);
+
 pub type ExprIdx = Idx<Expr>;
 
 #[derive(Debug)]
@@ -20,16 +23,16 @@ pub type TyIdx = Idx<Ty>;
 #[derive(Debug)]
 pub enum Ty {
     Unit,
-    Variable(DeBrujin),
+    Variable(DeBrujin, Rank),
     Unification(usize),
     Function(TyIdx, TyIdx),
     Pair(TyIdx, TyIdx),
-    Forall(DeBrujin, TyIdx),
+    Forall(DeBrujin, Rank, TyIdx),
 }
 
 impl Ty {
     pub fn is_polymorphic(&self) -> bool {
-        matches!(self, Self::Forall(_, _))
+        matches!(self, Self::Forall(_, _, _))
     }
 }
 

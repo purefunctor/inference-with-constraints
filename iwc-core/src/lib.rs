@@ -3,16 +3,16 @@ pub mod types;
 
 #[cfg(test)]
 mod tests {
-    use crate::{context::Context, types::DeBrujin};
+    use crate::{context::Context, types::{DeBrujin, Rank}};
 
     #[test]
     pub fn lambda_inference() {
         let mut context = Context::default();
 
         let identity_type = {
-            let a = context.ty_variable(DeBrujin(0));
+            let a = context.ty_variable(DeBrujin(0), Rank(0));
             let a_to_a = context.ty_function(a, a);
-            context.ty_forall(DeBrujin(1), a_to_a)
+            context.ty_forall(DeBrujin(1), Rank(0), a_to_a)
         };
 
         context.bind_type("identity", identity_type);

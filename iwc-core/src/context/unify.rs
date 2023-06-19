@@ -15,7 +15,7 @@ impl Context {
             // Trivial
             (Ty::Unit, Ty::Unit) => (),
             // Identity
-            (Ty::Variable(a), Ty::Variable(b)) if a == b => (),
+            (Ty::Variable(a, r), Ty::Variable(b, s)) if a == b && r == s => (),
             (Ty::Unification(a), Ty::Unification(b)) => {
                 if a != b {
                     self.emit_deep(*a, *b);
