@@ -54,17 +54,16 @@ impl Context {
 
             // We verify which constraints can make more progress,
             // but we defer solving them until the next iteration.
-            let mut unsolved_deeper = vec![];
-            for (u, v) in unsolved_deep {
+            unsolved_deep.retain(|(u, v)| {
                 let u_ty = unifications.get(&u);
                 let v_ty = unifications.get(&v);
                 if u_ty.is_some() || v_ty.is_some() {
-                    constraints.push(Constraint::UnifyDeep(u, v));
+                    constraints.push(Constraint::UnifyDeep(*u, *v));
+                    false
                 } else {
-                    unsolved_deeper.push((u, v));
+                    true
                 }
-            }
-            unsolved_deep = unsolved_deeper;
+            });
 
             if constraints.is_empty() {
                 break;
