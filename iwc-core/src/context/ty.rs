@@ -1,4 +1,6 @@
-use crate::types::{DeBrujin, Rank, Ty, TyIdx};
+use smol_str::SmolStr;
+
+use crate::types::{Ty, TyIdx, TypeVariableBindings};
 
 use super::Context;
 
@@ -8,8 +10,8 @@ impl Context {
         self.ty_arena.allocate(Ty::Unit)
     }
 
-    pub fn ty_variable(&mut self, v: DeBrujin, r: Rank) -> TyIdx {
-        self.ty_arena.allocate(Ty::Variable(v, r))
+    pub fn ty_variable(&mut self, v: &str, r: usize) -> TyIdx {
+        self.ty_arena.allocate(Ty::Variable(v.into(), r))
     }
 
     pub fn ty_unification(&mut self, v: usize) -> TyIdx {
@@ -24,8 +26,9 @@ impl Context {
         self.ty_arena.allocate(Ty::Pair(a, b))
     }
 
-    pub fn ty_forall(&mut self, v: DeBrujin, r: Rank, t: TyIdx) -> TyIdx {
-        self.ty_arena.allocate(Ty::Forall(v, r, t))
+    pub fn ty_forall(&mut self, vs: &[&str], r: usize, t: TyIdx) -> TyIdx {
+        self.ty_arena
+            .allocate(Ty::Forall(vs.into_iter().map(SmolStr::new).collect(), r, t))
     }
 }
 
@@ -53,21 +56,24 @@ impl Context {
 
     pub fn instantiate_type(&mut self, t: TyIdx) -> TyIdx {
         if let Ty::Forall(vs, r, t) = &self.ty_arena[t] {
-            let vs = *vs;
+            // NOTE: TinyVec/SmolStr makes it so that sufficiently
+            // small data does not require heap allocations--in the
+            // general case, clones such as these are inexpensive.
+            let vs = vs.clone();
             let r = *r;
             let t = *t;
 
-            self.instantiate_type_core(vs, r, t)
+            self.instantiate_type_core(&vs, r, t)
         } else {
             t
         }
     }
 
-    fn instantiate_type_core(&mut self, vs: DeBrujin, r: Rank, t: TyIdx) -> TyIdx {
+    fn instantiate_type_core(&mut self, vs: &TypeVariableBindings, r: usize, t: TyIdx) -> TyIdx {
         match &self.ty_arena[t] {
             Ty::Unit => t,
             Ty::Variable(v, s) => {
-                if *s == r && *v < vs {
+                if *s == r && vs.contains(v) {
                     self.ty_unification_fresh()
                 } else {
                     t

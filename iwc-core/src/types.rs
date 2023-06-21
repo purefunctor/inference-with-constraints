@@ -1,11 +1,6 @@
 use iwc_arena::Idx;
 use smol_str::SmolStr;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct DeBrujin(pub usize);
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Rank(pub usize);
+use tinyvec::TinyVec;
 
 pub type ExprIdx = Idx<Expr>;
 
@@ -20,14 +15,16 @@ pub enum Expr {
 
 pub type TyIdx = Idx<Ty>;
 
+pub type TypeVariableBindings = TinyVec<[SmolStr; 4]>;
+
 #[derive(Debug)]
 pub enum Ty {
     Unit,
-    Variable(DeBrujin, Rank),
+    Variable(SmolStr, usize),
     Unification(usize),
     Function(TyIdx, TyIdx),
     Pair(TyIdx, TyIdx),
-    Forall(DeBrujin, Rank, TyIdx),
+    Forall(TypeVariableBindings, usize, TyIdx),
 }
 
 impl Ty {

@@ -3,7 +3,7 @@ use anyhow::Context;
 use crate::types::{Expr, ExprIdx, TyIdx};
 
 /// The core inference algorithm.
-/// 
+///
 /// This algorithm is implemented in terms of the Hindley-Milner type system.
 impl super::Context {
     pub fn infer(&mut self, e_idx: ExprIdx) -> anyhow::Result<TyIdx> {
