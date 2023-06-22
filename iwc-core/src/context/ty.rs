@@ -8,33 +8,30 @@ impl Context {
         self.ty_arena.allocate(Ty::Unit)
     }
 
-    pub fn ty_variable(&mut self, v: &str, r: usize) -> TyIdx {
+    pub fn ty_variable(&mut self, name: &str, rank: usize) -> TyIdx {
         self.ty_arena.allocate(Ty::Variable {
-            name: v.into(),
-            rank: r,
+            name: name.into(),
+            rank,
         })
     }
 
-    pub fn ty_unification(&mut self, v: usize) -> TyIdx {
-        self.ty_arena.allocate(Ty::Unification { value: v })
+    pub fn ty_unification(&mut self, value: usize) -> TyIdx {
+        self.ty_arena.allocate(Ty::Unification { value })
     }
 
-    pub fn ty_function(&mut self, a: TyIdx, r: TyIdx) -> TyIdx {
-        self.ty_arena.allocate(Ty::Function {
-            argument: a,
-            result: r,
-        })
+    pub fn ty_function(&mut self, argument: TyIdx, result: TyIdx) -> TyIdx {
+        self.ty_arena.allocate(Ty::Function { argument, result })
     }
 
-    pub fn ty_pair(&mut self, a: TyIdx, b: TyIdx) -> TyIdx {
-        self.ty_arena.allocate(Ty::Pair { left: a, right: b })
+    pub fn ty_pair(&mut self, left: TyIdx, right: TyIdx) -> TyIdx {
+        self.ty_arena.allocate(Ty::Pair { left, right })
     }
 
-    pub fn ty_forall(&mut self, vs: TypeVariableBindings, r: usize, t: TyIdx) -> TyIdx {
+    pub fn ty_forall(&mut self, variables: TypeVariableBindings, rank: usize, ty: TyIdx) -> TyIdx {
         self.ty_arena.allocate(Ty::Forall {
-            variables: vs,
-            rank: r,
-            ty: t,
+            variables,
+            rank,
+            ty,
         })
     }
 
