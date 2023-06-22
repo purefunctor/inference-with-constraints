@@ -14,7 +14,7 @@ mod tests {
         let identity_type = {
             let a = context.ty_variable("a", 0);
             let a_to_a = context.ty_function(a, a);
-            context.ty_forall(tiny_vec!(_ => "a".into()), 0, a_to_a)
+            context.ty_forall(tiny_vec!("a".into()), 0, a_to_a)
         };
 
         context.bind_type("identity", identity_type);
