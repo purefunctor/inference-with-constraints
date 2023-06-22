@@ -35,7 +35,7 @@ pub struct Class {
 
 pub type AssertionHead = TinyVec<[TyIdx; INLINE_LIMIT]>;
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Assertion {
     pub name: SmolStr,
     pub arguments: AssertionHead,

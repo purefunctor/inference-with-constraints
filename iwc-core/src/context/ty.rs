@@ -1,4 +1,4 @@
-use crate::types::{Ty, TyIdx, TypeVariableBindings};
+use crate::types::{Assertions, Ty, TyIdx, TypeVariableBindings};
 
 use super::Context;
 
@@ -36,6 +36,10 @@ impl Context {
             rank: r,
             ty: t,
         })
+    }
+
+    pub fn ty_constrained(&mut self, assertions: Assertions, ty: TyIdx) -> TyIdx {
+        self.ty_arena.allocate(Ty::Constrained { assertions, ty })
     }
 }
 
@@ -130,14 +134,24 @@ impl Context {
                 self.ty_pair(a, b)
             }
             Ty::Forall {
-                variables: _,
-                rank: _,
-                ty: _,
-            } => ty,
-            Ty::Constrained {
-                assertions: _,
-                ty: _,
-            } => ty,
+                variables: inner_variables,
+                rank: inner_rank,
+                ty: inner_ty,
+            } => {
+                debug_assert_ne!(rank, *inner_rank, "Malformed polymorphic type.");
+
+                let inner_variables = inner_variables.clone();
+                let inner_rank = *inner_rank;
+                let inner_ty = self.instantiate_type_core(variables, rank, *inner_ty);
+
+                self.ty_forall(inner_variables, inner_rank, inner_ty)
+            }
+            Ty::Constrained { assertions, ty } => {
+                let assertions = assertions.clone();
+                let ty = self.instantiate_type_core(variables, rank, *ty);
+
+                self.ty_constrained(assertions, ty)
+            }
         }
     }
 }
