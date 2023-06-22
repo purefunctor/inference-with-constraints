@@ -15,14 +15,18 @@ impl Context {
             // Trivial
             (Ty::Unit, Ty::Unit) => (),
             // Identity
-            (Ty::Variable(a, r), Ty::Variable(b, s)) if a == b && r == s => (),
-            (Ty::Unification(a), Ty::Unification(b)) => {
+            (Ty::Variable { name: a, rank: r }, Ty::Variable { name: b, rank: s })
+                if a == b && r == s =>
+            {
+                ()
+            }
+            (Ty::Unification { value: a }, Ty::Unification { value: b }) => {
                 if a != b {
                     self.emit_deep(*a, *b);
                 }
             }
             // Unification
-            (t, Ty::Unification(u)) => {
+            (t, Ty::Unification { value: u }) => {
                 if t.is_polymorphic() {
                     bail!("Impredicative types.");
                 }
@@ -31,7 +35,7 @@ impl Context {
                 }
                 self.emit_solve(*u, t_idx);
             }
-            (Ty::Unification(t), u) => {
+            (Ty::Unification { value: t }, u) => {
                 if u.is_polymorphic() {
                     bail!("Impredicative types.");
                 }
@@ -41,7 +45,16 @@ impl Context {
                 self.emit_solve(*t, u_idx);
             }
             // Compound types
-            (Ty::Function(a, r), Ty::Function(b, s)) => {
+            (
+                Ty::Function {
+                    argument: a,
+                    result: r,
+                },
+                Ty::Function {
+                    argument: b,
+                    result: s,
+                },
+            ) => {
                 let a = *a;
                 let b = *b;
 
@@ -51,7 +64,7 @@ impl Context {
                 self.unify(a, b)?;
                 self.unify(r, s)?;
             }
-            (Ty::Pair(a, b), Ty::Pair(x, y)) => {
+            (Ty::Pair { left: a, right: b }, Ty::Pair { left: x, right: y }) => {
                 let a = *a;
                 let x = *x;
 

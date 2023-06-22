@@ -20,16 +20,31 @@ pub type TypeVariableBindings = TinyVec<[SmolStr; 4]>;
 #[derive(Debug)]
 pub enum Ty {
     Unit,
-    Variable(SmolStr, usize),
-    Unification(usize),
-    Function(TyIdx, TyIdx),
-    Pair(TyIdx, TyIdx),
-    Forall(TypeVariableBindings, usize, TyIdx),
+    Variable {
+        name: SmolStr,
+        rank: usize,
+    },
+    Unification {
+        value: usize,
+    },
+    Function {
+        argument: TyIdx,
+        result: TyIdx,
+    },
+    Pair {
+        left: TyIdx,
+        right: TyIdx,
+    },
+    Forall {
+        variables: TypeVariableBindings,
+        rank: usize,
+        ty: TyIdx,
+    },
 }
 
 impl Ty {
     pub fn is_polymorphic(&self) -> bool {
-        matches!(self, Self::Forall(_, _, _))
+        matches!(self, Self::Forall { .. })
     }
 }
 

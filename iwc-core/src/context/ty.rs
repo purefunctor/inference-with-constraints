@@ -11,24 +11,33 @@ impl Context {
     }
 
     pub fn ty_variable(&mut self, v: &str, r: usize) -> TyIdx {
-        self.ty_arena.allocate(Ty::Variable(v.into(), r))
+        self.ty_arena.allocate(Ty::Variable {
+            name: v.into(),
+            rank: r,
+        })
     }
 
     pub fn ty_unification(&mut self, v: usize) -> TyIdx {
-        self.ty_arena.allocate(Ty::Unification(v))
+        self.ty_arena.allocate(Ty::Unification { value: v })
     }
 
     pub fn ty_function(&mut self, a: TyIdx, r: TyIdx) -> TyIdx {
-        self.ty_arena.allocate(Ty::Function(a, r))
+        self.ty_arena.allocate(Ty::Function {
+            argument: a,
+            result: r,
+        })
     }
 
     pub fn ty_pair(&mut self, a: TyIdx, b: TyIdx) -> TyIdx {
-        self.ty_arena.allocate(Ty::Pair(a, b))
+        self.ty_arena.allocate(Ty::Pair { left: a, right: b })
     }
 
     pub fn ty_forall(&mut self, vs: &[&str], r: usize, t: TyIdx) -> TyIdx {
-        self.ty_arena
-            .allocate(Ty::Forall(vs.into_iter().map(SmolStr::new).collect(), r, t))
+        self.ty_arena.allocate(Ty::Forall {
+            variables: vs.into_iter().map(SmolStr::new).collect(),
+            rank: r,
+            ty: t,
+        })
     }
 }
 
@@ -46,59 +55,83 @@ impl Context {
     pub fn occurs_check(&self, t: TyIdx, u: usize) -> bool {
         match &self.ty_arena[t] {
             Ty::Unit => false,
-            Ty::Variable(_, _) => false,
-            Ty::Unification(v) => u == *v,
-            Ty::Function(a, r) => self.occurs_check(*a, u) || self.occurs_check(*r, u),
-            Ty::Pair(a, b) => self.occurs_check(*a, u) || self.occurs_check(*b, u),
-            Ty::Forall(_, _, t) => self.occurs_check(*t, u),
+            Ty::Variable { name: _, rank: _ } => false,
+            Ty::Unification { value: v } => u == *v,
+            Ty::Function {
+                argument: a,
+                result: r,
+            } => self.occurs_check(*a, u) || self.occurs_check(*r, u),
+            Ty::Pair { left: a, right: b } => self.occurs_check(*a, u) || self.occurs_check(*b, u),
+            Ty::Forall {
+                variables: _,
+                rank: _,
+                ty: t,
+            } => self.occurs_check(*t, u),
         }
     }
 
     pub fn instantiate_type(&mut self, t: TyIdx) -> TyIdx {
-        if let Ty::Forall(vs, r, t) = &self.ty_arena[t] {
+        if let Ty::Forall {
+            variables,
+            rank,
+            ty,
+        } = &self.ty_arena[t]
+        {
             // NOTE: TinyVec/SmolStr makes it so that sufficiently
             // small data does not require heap allocations--in the
             // general case, clones such as these are inexpensive.
-            let vs = vs.clone();
-            let r = *r;
-            let t = *t;
+            let variables = variables.clone();
+            let rank = *rank;
+            let ty = *ty;
 
-            self.instantiate_type_core(&vs, r, t)
+            self.instantiate_type_core(&variables, rank, ty)
         } else {
             t
         }
     }
 
-    fn instantiate_type_core(&mut self, vs: &TypeVariableBindings, r: usize, t: TyIdx) -> TyIdx {
-        match &self.ty_arena[t] {
-            Ty::Unit => t,
-            Ty::Variable(v, s) => {
-                if *s == r && vs.contains(v) {
+    fn instantiate_type_core(
+        &mut self,
+        variables: &TypeVariableBindings,
+        rank: usize,
+        ty: TyIdx,
+    ) -> TyIdx {
+        match &self.ty_arena[ty] {
+            Ty::Unit => ty,
+            Ty::Variable { name: v, rank: s } => {
+                if *s == rank && variables.contains(v) {
                     self.ty_unification_fresh()
                 } else {
-                    t
+                    ty
                 }
             }
-            Ty::Unification(_) => t,
-            Ty::Function(f, x) => {
-                let f = *f;
-                let x = *x;
+            Ty::Unification { value: _ } => ty,
+            Ty::Function {
+                argument: a,
+                result: r,
+            } => {
+                let a = *a;
+                let r = *r;
 
-                let f = self.instantiate_type_core(vs, r, f);
-                let x = self.instantiate_type_core(vs, r, x);
+                let a = self.instantiate_type_core(variables, rank, a);
+                let r = self.instantiate_type_core(variables, rank, r);
 
-                self.ty_function(f, x)
+                self.ty_function(a, r)
             }
-            Ty::Pair(a, b) => {
+            Ty::Pair { left: a, right: b } => {
                 let a = *a;
                 let b = *b;
 
-                let a = self.instantiate_type_core(vs, r, a);
-                let b = self.instantiate_type_core(vs, r, b);
+                let a = self.instantiate_type_core(variables, rank, a);
+                let b = self.instantiate_type_core(variables, rank, b);
 
                 self.ty_pair(a, b)
             }
-            Ty::Forall(_, _, _) => t,
+            Ty::Forall {
+                variables: _,
+                rank: _,
+                ty: _,
+            } => ty,
         }
     }
 }
