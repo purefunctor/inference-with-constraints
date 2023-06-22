@@ -67,6 +67,10 @@ impl Context {
                 rank: _,
                 ty: t,
             } => self.occurs_check(*t, u),
+            Ty::Constrained {
+                assertions: _,
+                ty: t,
+            } => self.occurs_check(*t, u),
         }
     }
 
@@ -130,6 +134,10 @@ impl Context {
             Ty::Forall {
                 variables: _,
                 rank: _,
+                ty: _,
+            } => ty,
+            Ty::Constrained {
+                assertions: _,
                 ty: _,
             } => ty,
         }

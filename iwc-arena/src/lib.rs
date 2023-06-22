@@ -68,3 +68,12 @@ impl<T> std::fmt::Debug for Idx<T> {
         f.debug_struct("Idx").field("value", &self.value).finish()
     }
 }
+
+impl<T> Default for Idx<T> {
+    fn default() -> Self {
+        Self {
+            value: u32::default(),
+            _marker: PhantomData,
+        }
+    }
+}
