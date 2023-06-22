@@ -1,5 +1,3 @@
-use smol_str::SmolStr;
-
 use crate::types::{Ty, TyIdx, TypeVariableBindings};
 
 use super::Context;
@@ -32,9 +30,9 @@ impl Context {
         self.ty_arena.allocate(Ty::Pair { left: a, right: b })
     }
 
-    pub fn ty_forall(&mut self, vs: &[&str], r: usize, t: TyIdx) -> TyIdx {
+    pub fn ty_forall(&mut self, vs: TypeVariableBindings, r: usize, t: TyIdx) -> TyIdx {
         self.ty_arena.allocate(Ty::Forall {
-            variables: vs.iter().map(SmolStr::new).collect(),
+            variables: vs,
             rank: r,
             ty: t,
         })
