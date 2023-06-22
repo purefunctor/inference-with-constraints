@@ -10,7 +10,7 @@ impl super::Context {
         match &self.ex_arena[e_idx] {
             Expr::Unit => Ok(self.ty_unit()),
             Expr::Variable(v) => self
-                .lookup_type(&v)
+                .lookup_type(v)
                 .context(format!("Unbound variable {:?}", v)),
             Expr::Lambda(x, v) => {
                 let x = x.clone();

@@ -55,8 +55,8 @@ impl Context {
             // We verify which constraints can make more progress,
             // but we defer solving them until the next iteration.
             unsolved_deep.retain(|(u, v)| {
-                let u_ty = unifications.get(&u);
-                let v_ty = unifications.get(&v);
+                let u_ty = unifications.get(u);
+                let v_ty = unifications.get(v);
                 if u_ty.is_some() || v_ty.is_some() {
                     constraints.push(Constraint::UnifyDeep(*u, *v));
                     false

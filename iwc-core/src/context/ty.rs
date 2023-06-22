@@ -34,7 +34,7 @@ impl Context {
 
     pub fn ty_forall(&mut self, vs: &[&str], r: usize, t: TyIdx) -> TyIdx {
         self.ty_arena.allocate(Ty::Forall {
-            variables: vs.into_iter().map(SmolStr::new).collect(),
+            variables: vs.iter().map(SmolStr::new).collect(),
             rank: r,
             ty: t,
         })
