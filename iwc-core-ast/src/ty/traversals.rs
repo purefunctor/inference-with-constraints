@@ -1,11 +1,9 @@
-use iwc_arena::ArenaLike;
+use iwc_arena::Arena;
 
 use super::{Assertions, Ty, TyIdx};
 
 pub trait Visitor: Sized {
-    type TyArena: ArenaLike<Ty>;
-
-    fn arena(&mut self) -> &mut Self::TyArena;
+    fn arena(&mut self) -> &mut Arena<Ty>;
 
     fn visit_ty(&mut self, ty: TyIdx) -> TyIdx {
         walk_ty(self, ty)

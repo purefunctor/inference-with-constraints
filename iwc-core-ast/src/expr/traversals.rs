@@ -1,11 +1,9 @@
-use iwc_arena::ArenaLike;
+use iwc_arena::Arena;
 
 use super::{Expr, ExprIdx};
 
 pub trait Visitor: Sized {
-    type ExprArena: ArenaLike<Expr>;
-
-    fn arena(&mut self) -> &mut Self::ExprArena;
+    fn arena(&mut self) -> &mut Arena<Expr>;
 
     fn visit_expr(&mut self, expr: ExprIdx) -> ExprIdx {
         walk_expr(self, expr)
