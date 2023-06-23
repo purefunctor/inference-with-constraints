@@ -1,3 +1,5 @@
+pub mod traversals;
+
 use iwc_arena::Idx;
 use smol_str::SmolStr;
 use tinyvec::TinyVec;

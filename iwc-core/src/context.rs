@@ -7,6 +7,7 @@ mod env;
 mod expr;
 mod infer;
 mod solve;
+mod traversals;
 mod ty;
 mod unify;
 
