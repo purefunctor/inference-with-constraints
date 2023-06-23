@@ -1,4 +1,6 @@
-pub mod traversals;
+mod traversals;
+
+pub use traversals::*;
 
 use iwc_arena::Idx;
 use smol_str::SmolStr;
