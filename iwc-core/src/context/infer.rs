@@ -1,6 +1,6 @@
 use anyhow::Context;
 
-use crate::types::{Expr, ExprIdx, TyIdx};
+use crate::types::{Assertions, Constraint, Expr, ExprIdx, TyIdx};
 
 /// The core inference algorithm.
 ///
@@ -26,12 +26,13 @@ impl super::Context {
                 let x = *x;
 
                 let f_ty = self.infer(f)?;
-                let f_ty = self.instantiate_type(f_ty);
+                let (f_a, f_ty) = self.instantiate_type(f_ty);
                 let x_ty = self.infer(x)?;
                 let r_ty = self.ty_unification_fresh();
                 let i_ty = self.ty_function(x_ty, r_ty);
 
                 self.unify(f_ty, i_ty)?;
+                self.emit_assertions(f_a);
 
                 Ok(r_ty)
             }
@@ -44,6 +45,13 @@ impl super::Context {
 
                 Ok(self.ty_pair(a_ty, b_ty))
             }
+        }
+    }
+
+    pub fn emit_assertions(&mut self, assertions: Assertions) {
+        for assertion in assertions {
+            self.constraints
+                .push(Constraint::Assertion(assertion.name, assertion.arguments))
         }
     }
 }

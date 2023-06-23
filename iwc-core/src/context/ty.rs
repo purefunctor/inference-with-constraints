@@ -49,7 +49,7 @@ impl Context {
     }
 }
 
-/// Type traversals among other utilities.
+/// Well-formedness checks.
 impl Context {
     pub fn occurs_check(&self, t: TyIdx, u: usize) -> bool {
         match &self.ty_arena[t] {
@@ -72,8 +72,11 @@ impl Context {
             } => self.occurs_check(*t, u),
         }
     }
+}
 
-    pub fn instantiate_type(&mut self, t: TyIdx) -> TyIdx {
+/// Helper functions for instantiation.
+impl Context {
+    pub fn instantiate_type(&mut self, t: TyIdx) -> (Assertions, TyIdx) {
         if let Ty::Forall {
             variables,
             rank,
@@ -87,9 +90,22 @@ impl Context {
             let rank = *rank;
             let ty = *ty;
 
-            self.instantiate_type_core(&variables, rank, ty)
+            if let Ty::Constrained { assertions, ty } = &self.ty_arena[ty] {
+                let assertions = assertions.clone();
+                let ty = *ty;
+
+                let assertions = self.instantiate_type_assertions(&variables, rank, assertions);
+                let ty = self.instantiate_type_core(&variables, rank, ty);
+
+                (assertions, ty)
+            } else {
+                (
+                    Assertions::new(),
+                    self.instantiate_type_core(&variables, rank, ty),
+                )
+            }
         } else {
-            t
+            (Assertions::new(), t)
         }
     }
 
@@ -145,10 +161,30 @@ impl Context {
             }
             Ty::Constrained { assertions, ty } => {
                 let assertions = assertions.clone();
-                let ty = self.instantiate_type_core(variables, rank, *ty);
+                let ty = *ty;
+
+                let assertions = self.instantiate_type_assertions(variables, rank, assertions);
+                let ty = self.instantiate_type_core(variables, rank, ty);
 
                 self.ty_constrained(assertions, ty)
             }
         }
+    }
+
+    // NOTE: we move, mutate, and return the assertions rather than taking a
+    // mutable reference for consistency with other instantiation functions.
+    fn instantiate_type_assertions(
+        &mut self,
+        variables: &TypeVariableBindings,
+        rank: usize,
+        assertions: Assertions,
+    ) -> Assertions {
+        let mut assertions = assertions;
+        for assertion in &mut assertions {
+            for argument in &mut assertion.arguments {
+                *argument = self.instantiate_type_core(variables, rank, *argument);
+            }
+        }
+        assertions
     }
 }

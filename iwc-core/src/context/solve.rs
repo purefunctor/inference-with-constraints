@@ -26,6 +26,9 @@ impl Context {
         loop {
             for constraint in &constraints {
                 match constraint {
+                    Constraint::Assertion(_, _) => {
+                        continue;
+                    }
                     Constraint::UnifyDeep(u, v) => {
                         let u_ty = unifications.get(u);
                         let v_ty = unifications.get(v);

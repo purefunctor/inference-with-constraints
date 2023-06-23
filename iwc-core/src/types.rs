@@ -89,6 +89,7 @@ impl Ty {
 
 #[derive(Debug)]
 pub enum Constraint {
+    Assertion(SmolStr, AssertionHead),
     UnifyDeep(usize, usize),
     UnifySolve(usize, TyIdx),
 }
