@@ -77,3 +77,13 @@ impl<T> Default for Idx<T> {
         }
     }
 }
+
+pub trait ArenaLike<T>: Index<Idx<T>, Output = T> {
+    fn allocate(&mut self, v: T) -> Idx<T>;
+}
+
+impl<T> ArenaLike<T> for Arena<T> {
+    fn allocate(&mut self, v: T) -> Idx<T> {
+        self.allocate(v)
+    }
+}
