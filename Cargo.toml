@@ -2,4 +2,5 @@
 members = [
     "iwc-arena",
     "iwc-core",
+    "iwc-core-ast",
 ]

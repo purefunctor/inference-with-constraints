@@ -23,6 +23,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "iwc-core-ast"
+version = "0.1.0"
+dependencies = [
+ "iwc-arena",
+ "smol_str",
+ "tinyvec",
+]
+
+[[package]]
 name = "serde"
 version = "1.0.164"
 source = "registry+https://github.com/rust-lang/crates.io-index"
