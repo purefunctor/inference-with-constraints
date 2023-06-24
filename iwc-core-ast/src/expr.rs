@@ -14,7 +14,7 @@ pub enum Expr {
         name: SmolStr,
     },
     Lambda {
-        argument: SmolStr,
+        name: SmolStr,
         body: ExprIdx,
     },
     Application {
