@@ -28,6 +28,7 @@ dependencies = [
  "anyhow",
  "iwc-arena",
  "iwc-core-ast",
+ "smol_str",
 ]
 
 [[package]]
