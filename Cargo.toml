@@ -1,6 +1,6 @@
 [workspace]
 members = [
     "iwc-arena",
-    "iwc-core",
     "iwc-core-ast",
+    "iwc-core-tck",
 ]
