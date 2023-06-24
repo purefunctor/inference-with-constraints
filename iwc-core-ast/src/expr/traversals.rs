@@ -14,19 +14,13 @@ pub fn walk_expr<V: Visitor>(visitor: &mut V, expr: ExprIdx) -> ExprIdx {
     match &visitor.arena()[expr] {
         Expr::Unit => expr,
         Expr::Variable { .. } => expr,
-        Expr::Lambda {
-            name,
-            body,
-        } => {
+        Expr::Lambda { name, body } => {
             let name = name.clone();
             let body = *body;
 
             let body = visitor.visit_expr(body);
 
-            visitor.arena().allocate(Expr::Lambda {
-                name,
-                body,
-            })
+            visitor.arena().allocate(Expr::Lambda { name, body })
         }
         Expr::Application { function, argument } => {
             let function = *function;

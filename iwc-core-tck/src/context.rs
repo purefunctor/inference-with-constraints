@@ -2,6 +2,7 @@ pub mod common;
 pub mod env;
 pub mod infer;
 pub mod instantiate;
+pub mod solve;
 pub mod unify;
 
 use std::collections::HashMap;
