@@ -1,7 +1,7 @@
 //! Implements the instantiation algorithm.
 //!
 //! Instantiation replaces type variables introduced by a `forall` with unification variables.
-//! Meanwhile, class constraints are pushed onto the inference engine's queue for entailment.
+//! Class constraints are passed to the inference constraint solver for the entailment algorithm.
 //!
 //! # Examples
 //!
