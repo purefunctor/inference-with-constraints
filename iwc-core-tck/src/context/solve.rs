@@ -1,4 +1,13 @@
 //! Implements the inference constraint solver.
+//!
+//! The inference constraint solver serves as the type system's core. It iteratively solves
+//! subproblems (i.e. [`Constraint`]) until it cannot make any more progress. It also defers
+//! solving certain constraints until it gathers more context.
+//!
+//! One of the core subproblems is finding a substitution for unification variables, which is
+//! captured by [`Constraint::UnifyDeep`] and [`Constraint::UnifySolve`]; as the name implies
+//! these constraints are usually generated during unification, and for `UnifyDeep`, may also
+//! generate more constraints to be solved.
 
 use std::collections::HashMap;
 
