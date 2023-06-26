@@ -78,7 +78,7 @@ impl Context {
             }
         }
 
-        todo!()
+        Ok(())
     }
 
     fn occurs_check(&self, t: TyIdx, u: usize) -> bool {
