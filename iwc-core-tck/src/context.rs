@@ -15,15 +15,20 @@ use iwc_core_ast::{
 };
 use smol_str::SmolStr;
 
-pub struct Context {
-    // Environment
+pub struct Environment {
     bindings: HashMap<SmolStr, TyIdx>,
-    // Volatile
+}
+
+pub struct Volatile {
     expr_arena: Arena<Expr>,
     ty_arena: Arena<Ty>,
     fresh_index: usize,
-    // Accumulator
     constraints: Vec<Constraint>,
+}
+
+pub struct Context {
+    environment: Environment,
+    volatile: Volatile,
 }
 
 pub enum Constraint {

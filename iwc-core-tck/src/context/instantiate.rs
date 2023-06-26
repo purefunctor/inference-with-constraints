@@ -35,13 +35,13 @@ impl Context {
             variables,
             rank,
             ty,
-        } = &self.ty_arena[ty]
+        } = &self.volatile.ty_arena[ty]
         {
             let variables = variables.clone();
             let rank = *rank;
             let ty = *ty;
 
-            if let Ty::Constrained { assertions, ty } = &self.ty_arena[ty] {
+            if let Ty::Constrained { assertions, ty } = &self.volatile.ty_arena[ty] {
                 let assertions = assertions.clone();
                 let ty = *ty;
 
@@ -84,11 +84,11 @@ impl<'context> Instantiate<'context> {
 
 impl<'context> ty::Visitor for Instantiate<'context> {
     fn arena(&mut self) -> &mut Arena<Ty> {
-        &mut self.context.ty_arena
+        &mut self.context.volatile.ty_arena
     }
 
     fn visit_ty(&mut self, ty: TyIdx) -> TyIdx {
-        match &self.context.ty_arena[ty] {
+        match &self.context.volatile.ty_arena[ty] {
             Ty::Variable { name, rank } if self.rank == *rank && self.variables.contains(name) => {
                 self.context.fresh_unification_variable()
             }

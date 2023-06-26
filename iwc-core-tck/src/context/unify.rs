@@ -12,7 +12,10 @@ use super::{Constraint, Context};
 
 impl Context {
     pub fn unify(&mut self, t_idx: TyIdx, u_idx: TyIdx) -> anyhow::Result<()> {
-        match (&self.ty_arena[t_idx], &self.ty_arena[u_idx]) {
+        match (
+            &self.volatile.ty_arena[t_idx],
+            &self.volatile.ty_arena[u_idx],
+        ) {
             // Trivial
             (Ty::Unit, Ty::Unit) => (),
             // Identity
@@ -82,7 +85,7 @@ impl Context {
     }
 
     fn occurs_check(&self, t: TyIdx, u: usize) -> bool {
-        match &self.ty_arena[t] {
+        match &self.volatile.ty_arena[t] {
             Ty::Unit => false,
             Ty::Variable { name: _, rank: _ } => false,
             Ty::Unification { value: v } => u == *v,
@@ -104,10 +107,10 @@ impl Context {
     }
 
     fn emit_deep(&mut self, u: usize, v: usize) {
-        self.constraints.push(Constraint::UnifyDeep(u, v));
+        self.volatile.constraints.push(Constraint::UnifyDeep(u, v));
     }
 
     fn emit_solve(&mut self, u: usize, t: TyIdx) {
-        self.constraints.push(Constraint::UnifySolve(u, t));
+        self.volatile.constraints.push(Constraint::UnifySolve(u, t));
     }
 }

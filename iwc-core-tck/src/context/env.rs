@@ -5,7 +5,8 @@ use iwc_core_ast::ty::TyIdx;
 
 impl super::Context {
     pub fn lookup_variable(&self, name: &str) -> anyhow::Result<TyIdx> {
-        self.bindings
+        self.environment
+            .bindings
             .get(name)
             .context(format!("Unbound variable {:?}", name))
             .copied()
@@ -15,9 +16,9 @@ impl super::Context {
     where
         F: FnOnce(&mut Self) -> T,
     {
-        self.bindings.insert(name.into(), ty);
+        self.environment.bindings.insert(name.into(), ty);
         let result = action(self);
-        self.bindings.remove(name);
+        self.environment.bindings.remove(name);
         result
     }
 }

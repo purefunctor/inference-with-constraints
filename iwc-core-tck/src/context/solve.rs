@@ -19,7 +19,7 @@ type Unifications = HashMap<usize, TyIdx>;
 
 impl Context {
     pub fn solve(&mut self) -> anyhow::Result<()> {
-        let mut constraints = std::mem::take(&mut self.constraints);
+        let mut constraints = std::mem::take(&mut self.volatile.constraints);
         let mut unifications = Unifications::new();
         let mut unsolved_deep = vec![];
 
@@ -53,7 +53,7 @@ impl Context {
                 }
             }
 
-            constraints = std::mem::take(&mut self.constraints);
+            constraints = std::mem::take(&mut self.volatile.constraints);
 
             // We verify which constraints can make more progress,
             // but we defer solving them until the next iteration.
