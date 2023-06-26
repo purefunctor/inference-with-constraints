@@ -26,7 +26,7 @@ impl Context {
         loop {
             for constraint in &constraints {
                 match constraint {
-                    Constraint::ClassAssertion(Assertion { .. }) => {
+                    Constraint::ClassAssertion(_, Assertion { .. }) => {
                         unimplemented!("Entailment!");
                     }
                     Constraint::UnifyDeep(u, v) => {

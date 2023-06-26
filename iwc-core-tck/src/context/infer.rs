@@ -53,7 +53,9 @@ impl super::Context {
 
     fn emit_assertions(&mut self, assertions: Assertions) {
         for assertion in assertions {
-            self.constraints.push(Constraint::ClassAssertion(assertion));
+            let marker = self.fresh_marker();
+            self.constraints
+                .push(Constraint::ClassAssertion(marker, assertion));
         }
     }
 }

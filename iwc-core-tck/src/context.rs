@@ -1,4 +1,5 @@
 pub mod common;
+pub mod entail;
 pub mod env;
 pub mod infer;
 pub mod instantiate;
@@ -26,7 +27,7 @@ pub struct Context {
 }
 
 pub enum Constraint {
-    ClassAssertion(Assertion),
+    ClassAssertion(usize, Assertion),
     UnifyDeep(usize, usize),
     UnifySolve(usize, TyIdx),
 }
