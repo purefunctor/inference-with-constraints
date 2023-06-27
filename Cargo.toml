@@ -2,5 +2,4 @@
 members = [
     "iwc-arena",
     "iwc-core-ast",
-    "iwc-core-tck",
 ]

@@ -3,12 +3,6 @@
 version = 3
 
 [[package]]
-name = "anyhow"
-version = "1.0.71"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c7d0618f0e0b7e8ff11427422b64564d5fb0be1940354bfe2e0529b18a9d9b8"
-
-[[package]]
 name = "iwc-arena"
 version = "0.1.0"
 
@@ -18,18 +12,6 @@ version = "0.1.0"
 dependencies = [
  "iwc-arena",
  "smol_str",
- "tinyvec",
-]
-
-[[package]]
-name = "iwc-core-tck"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "iwc-arena",
- "iwc-core-ast",
- "smol_str",
- "tinyvec",
 ]
 
 [[package]]
@@ -46,18 +28,3 @@ checksum = "74212e6bbe9a4352329b2f68ba3130c15a3f26fe88ff22dbdc6cdd58fa85e99c"
 dependencies = [
  "serde",
 ]
-
-[[package]]
-name = "tinyvec"
-version = "1.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87cc5ceb3875bb20c2890005a4e226a4651264a5c75edb2421b52861a0a0cb50"
-dependencies = [
- "tinyvec_macros",
-]
-
-[[package]]
-name = "tinyvec_macros"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"

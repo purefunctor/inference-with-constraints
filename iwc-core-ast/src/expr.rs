@@ -1,28 +1,22 @@
-mod traversals;
-
-pub use traversals::*;
-
 use iwc_arena::Idx;
 use smol_str::SmolStr;
 
 pub type ExprIdx = Idx<Expr>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
-    Unit,
+    Constructor {
+        name: SmolStr,
+    },
     Variable {
         name: SmolStr,
     },
-    Lambda {
-        name: SmolStr,
-        body: ExprIdx,
-    },
     Application {
         function: ExprIdx,
-        argument: ExprIdx,
+        arguments: Vec<ExprIdx>,
     },
-    Pair {
-        left: ExprIdx,
-        right: ExprIdx,
+    Lambda {
+        arguments: Vec<SmolStr>,
+        body: ExprIdx,
     },
 }
