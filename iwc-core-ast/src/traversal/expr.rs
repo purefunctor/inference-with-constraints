@@ -1,6 +1,6 @@
 use iwc_arena::Arena;
 
-use crate::expr::{ExprIdx, Expr};
+use crate::expr::{Expr, ExprIdx};
 
 pub trait Traversal: Sized {
     fn arena(&mut self) -> &mut Arena<Expr>;
@@ -14,7 +14,10 @@ pub fn default_traverse_expr<T: Traversal>(traversal: &mut T, expr_idx: ExprIdx)
     match &traversal.arena()[expr_idx] {
         Expr::Constructor { .. } => expr_idx,
         Expr::Variable { .. } => expr_idx,
-        Expr::Application { function, arguments } => {
+        Expr::Application {
+            function,
+            arguments,
+        } => {
             let function = *function;
             let mut arguments = arguments.clone();
 
@@ -23,8 +26,11 @@ pub fn default_traverse_expr<T: Traversal>(traversal: &mut T, expr_idx: ExprIdx)
                 *argument = traversal.traverse_expr(*argument);
             }
 
-            traversal.arena().allocate(Expr::Application { function, arguments })
-        },
+            traversal.arena().allocate(Expr::Application {
+                function,
+                arguments,
+            })
+        }
         Expr::Lambda { arguments, body } => {
             let arguments = arguments.clone();
             let body = *body;
@@ -32,6 +38,6 @@ pub fn default_traverse_expr<T: Traversal>(traversal: &mut T, expr_idx: ExprIdx)
             let body = traversal.traverse_expr(body);
 
             traversal.arena().allocate(Expr::Lambda { arguments, body })
-        },
+        }
     }
 }

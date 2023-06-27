@@ -1,30 +1,24 @@
-pub mod common;
-pub mod entail;
-pub mod env;
-pub mod infer;
-pub mod instantiate;
-pub mod solve;
-pub mod unify;
+pub mod environment;
+pub mod volatile;
 
 use std::collections::HashMap;
 
 use iwc_arena::Arena;
 use iwc_core_ast::{
     expr::Expr,
-    ty::{Assertion, Instance, Ty, TyIdx},
+    ty::{Type, TypeIdx},
 };
 use smol_str::SmolStr;
 
 #[derive(Default)]
 pub struct Environment {
-    pub(crate) bindings: HashMap<SmolStr, TyIdx>,
-    pub(crate) instances: HashMap<SmolStr, Vec<Instance>>,
+    pub(crate) value_bindings: HashMap<SmolStr, TypeIdx>,
 }
 
 #[derive(Default)]
 pub struct Volatile {
     pub(crate) expr_arena: Arena<Expr>,
-    pub(crate) ty_arena: Arena<Ty>,
+    pub(crate) type_arena: Arena<Type>,
     pub(crate) fresh_index: usize,
     pub(crate) constraints: Vec<Constraint>,
 }
@@ -35,11 +29,4 @@ pub struct Context {
     pub(crate) volatile: Volatile,
 }
 
-#[derive(Debug)]
-pub enum Constraint {
-    ClassAssertion(usize, Assertion),
-    MatchDeep(usize, SmolStr, SmolStr),
-    MatchSolve(usize, SmolStr, TyIdx),
-    UnifyDeep(usize, usize),
-    UnifySolve(usize, TyIdx),
-}
+pub enum Constraint {}
