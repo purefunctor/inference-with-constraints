@@ -24,8 +24,11 @@
 //! instantiate((forall a. a -> a) -> ()) = [(forall a. a -> a) -> ()]
 //! ```
 
+use std::collections::HashMap;
+
 use iwc_arena::Arena;
 use iwc_core_ast::ty::{self, Assertions, Ty, TyIdx, TypeVariableBindings, Visitor};
+use smol_str::SmolStr;
 
 use super::Context;
 
@@ -66,6 +69,7 @@ struct Instantiate<'context> {
     context: &'context mut Context,
     variables: TypeVariableBindings,
     rank: usize,
+    existing: HashMap<SmolStr, TyIdx>,
 }
 
 impl<'context> Instantiate<'context> {
@@ -78,6 +82,7 @@ impl<'context> Instantiate<'context> {
             context,
             variables,
             rank,
+            existing: HashMap::new(),
         }
     }
 }
@@ -90,7 +95,10 @@ impl<'context> ty::Visitor for Instantiate<'context> {
     fn visit_ty(&mut self, ty: TyIdx) -> TyIdx {
         match &self.context.volatile.ty_arena[ty] {
             Ty::Variable { name, rank } if self.rank == *rank && self.variables.contains(name) => {
-                self.context.fresh_unification_variable()
+                *self
+                    .existing
+                    .entry(name.clone())
+                    .or_insert_with(|| self.context.fresh_unification_variable())
             }
             _ => ty::walk_ty(self, ty),
         }
