@@ -1,10 +1,13 @@
 //! Implements the entailment algorithm.
 
-use iwc_core_ast::ty::{Assertion, TyIdx};
+use std::iter::zip;
 
-use super::Context;
+use anyhow::{bail, Context};
+use iwc_core_ast::ty::{Assertion, Instance, Ty, TyIdx};
 
-impl Context {
+use super::{Constraint, Environment, Volatile};
+
+impl super::Context {
     // The entailment algorithm involves matching the assertion arguments similar to unification
     // but not entirely the same. To start, only monotypes can appear in instance heads, excluding
     // unification variables; we'll call this the assertion matching algorithm moving forward.
@@ -82,19 +85,67 @@ impl Context {
     //
     // Pushes an entry to assertion_solutions
 
-    pub fn match_assertion(
-        &mut self,
-        instance: Assertion,
-        assertion: Assertion,
+    pub fn match_assertion_ty(
+        environment: &Environment,
+        volatile: &mut Volatile,
+        marker: usize,
+        i_idx: TyIdx,
+        a_idx: TyIdx,
     ) -> anyhow::Result<()> {
+        println!(
+            "match_assertion_ty: {:?} ~ {:?}",
+            volatile.ty_arena[i_idx], volatile.ty_arena[a_idx]
+        );
+
+        match (&volatile.ty_arena[i_idx], &volatile.ty_arena[a_idx]) {
+            (_, Ty::Unification { value }) => volatile
+                .constraints
+                .push(Constraint::UnifySolve(*value, i_idx)),
+            (i_ty, a_ty) => {
+                bail!("Failed to match types {:?} ~ {:?}", i_ty, a_ty)
+            }
+        }
+
         Ok(())
     }
 
-    pub fn match_assertion_argument(&mut self, i_idx: TyIdx, a_idx: TyIdx) -> anyhow::Result<()> {
+    fn match_assertion_all(
+        environment: &Environment,
+        volatile: &mut Volatile,
+        marker: usize,
+        instance: &Instance,
+        assertion: &Assertion,
+    ) -> anyhow::Result<()> {
+        let instance_arguments = &instance.assertion.arguments;
+        let assertion_arguments = &assertion.arguments;
+
+        for (i_idx, a_idx) in zip(instance_arguments, assertion_arguments) {
+            Self::match_assertion_ty(environment, volatile, marker, *i_idx, *a_idx)?;
+        }
+
         Ok(())
     }
 
-    pub fn entail(&mut self, assertion: Assertion) -> anyhow::Result<()> {
-        Ok(())
+    pub fn entail(
+        &mut self,
+        instance_index: usize,
+        marker: usize,
+        assertion: &Assertion,
+    ) -> anyhow::Result<()> {
+        let name = &assertion.name;
+
+        let Self {
+            ref environment,
+            volatile,
+        } = self;
+
+        let instance = environment
+            .instances
+            .get(name)
+            .context("No instances found")?
+            .get(instance_index)
+            .context("No more instances")?;
+
+        Self::match_assertion_all(environment, volatile, marker, instance, assertion)
     }
 }

@@ -29,6 +29,7 @@ dependencies = [
  "iwc-arena",
  "iwc-core-ast",
  "smol_str",
+ "tinyvec",
 ]
 
 [[package]]

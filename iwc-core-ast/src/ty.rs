@@ -36,6 +36,7 @@ pub struct Assertion {
 
 pub type Assertions = TinyVec<[Assertion; INLINE_LIMIT]>;
 
+#[derive(Debug)]
 pub struct Instance {
     pub assertion: Assertion,
     pub dependencies: Assertions,

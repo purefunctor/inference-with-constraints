@@ -11,44 +11,64 @@
 
 use std::collections::HashMap;
 
-use iwc_core_ast::ty::{Assertion, TyIdx};
+use iwc_core_ast::ty::{Instance, TyIdx};
 
 use super::{Constraint, Context};
 
 type Unifications = HashMap<usize, TyIdx>;
+type InstanceIndex = HashMap<usize, usize>;
 
 impl Context {
     pub fn solve(&mut self) -> anyhow::Result<()> {
         let mut constraints = std::mem::take(&mut self.volatile.constraints);
+
         let mut unifications = Unifications::new();
         let mut unsolved_deep = vec![];
 
+        let mut instance_indices = InstanceIndex::new();
+
         loop {
-            for constraint in &constraints {
+            for constraint in constraints {
+                println!("Constraint: {:?}", constraint);
+                for (index, unification) in &unifications {
+                    println!(
+                        "Unifications: {:?} ~ {:?}",
+                        index, self.volatile.ty_arena[*unification]
+                    );
+                }
+
                 match constraint {
-                    Constraint::ClassAssertion(_, Assertion { .. }) => {
+                    Constraint::ClassAssertion(marker, assertion) => {
+                        let instance_index = *instance_indices.entry(marker).or_insert(0);
+
+                        self.entail(instance_index, marker, &assertion)?;
+                    }
+                    Constraint::MatchDeep(_, _, _) => {
+                        unimplemented!("Entailment!");
+                    }
+                    Constraint::MatchSolve(_, _, _) => {
                         unimplemented!("Entailment!");
                     }
                     Constraint::UnifyDeep(u, v) => {
-                        let u_ty = unifications.get(u);
-                        let v_ty = unifications.get(v);
+                        let u_ty = unifications.get(&u);
+                        let v_ty = unifications.get(&v);
                         match (u_ty, v_ty) {
                             (Some(u_ty), Some(v_ty)) => {
                                 self.unify(*u_ty, *v_ty)?;
                             }
                             (None, Some(v_ty)) => {
-                                unifications.insert(*u, *v_ty);
+                                unifications.insert(u, *v_ty);
                             }
                             (Some(u_ty), None) => {
-                                unifications.insert(*v, *u_ty);
+                                unifications.insert(v, *u_ty);
                             }
                             (None, None) => {
-                                unsolved_deep.push((*u, *v));
+                                unsolved_deep.push((u, v));
                             }
                         }
                     }
                     Constraint::UnifySolve(u, t) => {
-                        unifications.insert(*u, *t);
+                        unifications.insert(u, t);
                     }
                 }
             }
