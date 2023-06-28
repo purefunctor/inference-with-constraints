@@ -19,19 +19,27 @@ pub fn default_traverse_ty<T: Traversal>(traversal: &mut T, ty_idx: TypeIdx) -> 
         Type::Constructor { .. } => ty_idx,
         Type::Variable { .. } => ty_idx,
         Type::Unification { .. } => ty_idx,
-        Type::Function { arguments, result } => {
-            let mut arguments = arguments.clone();
+        Type::Function { argument, result } => {
+            let argument = *argument;
             let result = *result;
 
-            for argument in &mut arguments {
-                *argument = traversal.traverse_ty(*argument);
-            }
-
+            let argument = traversal.traverse_ty(argument);
             let result = traversal.traverse_ty(result);
 
             traversal
                 .arena()
-                .allocate(Type::Function { arguments, result })
+                .allocate(Type::Function { argument, result })
+        }
+        Type::Application { function, argument } => {
+            let function = *function;
+            let argument = *argument;
+
+            let function = traversal.traverse_ty(function);
+            let argument = traversal.traverse_ty(argument);
+
+            traversal
+                .arena()
+                .allocate(Type::Application { function, argument })
         }
         Type::Forall {
             variables,

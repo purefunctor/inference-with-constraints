@@ -27,8 +27,12 @@ pub enum Type {
         name: usize,
     },
     Function {
-        arguments: Vec<TypeIdx>,
+        argument: TypeIdx,
         result: TypeIdx,
+    },
+    Application {
+        function: TypeIdx,
+        argument: TypeIdx,
     },
     Forall {
         variables: Vec<TypeVariableBinder>,
@@ -39,4 +43,10 @@ pub enum Type {
         assertions: Vec<Assertion>,
         ty: TypeIdx,
     },
+}
+
+impl Type {
+    pub fn is_polymorphic(&self) -> bool {
+        matches!(self, Self::Forall { .. })
+    }
 }
