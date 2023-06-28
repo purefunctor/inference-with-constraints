@@ -1,4 +1,5 @@
 pub mod environment;
+pub mod unify;
 pub mod volatile;
 
 use std::collections::HashMap;
@@ -12,6 +13,7 @@ use smol_str::SmolStr;
 
 #[derive(Default)]
 pub struct Environment {
+    pub(crate) constructor_bindings: HashMap<SmolStr, TypeIdx>,
     pub(crate) value_bindings: HashMap<SmolStr, TypeIdx>,
 }
 
@@ -29,4 +31,8 @@ pub struct Context {
     pub(crate) volatile: Volatile,
 }
 
-pub enum Constraint {}
+#[derive(Debug)]
+pub enum Constraint {
+    UnifyDeep(usize, usize),
+    UnifySolve(usize, TypeIdx),
+}

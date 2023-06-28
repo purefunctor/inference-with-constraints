@@ -16,6 +16,21 @@ impl super::Environment {
     pub fn remove_value_binding(&mut self, key: &str) {
         self.value_bindings.remove(key);
     }
+
+    pub fn lookup_constructor_binding(&mut self, key: &str) -> anyhow::Result<TypeIdx> {
+        self.constructor_bindings
+            .get(key)
+            .context(format!("No constructor found {:?}", key))
+            .copied()
+    }
+
+    pub fn insert_constructor_binding(&mut self, key: &str, value: TypeIdx) {
+        self.constructor_bindings.insert(key.into(), value);
+    }
+
+    pub fn remove_constructor_binding(&mut self, key: &str) {
+        self.constructor_bindings.remove(key);
+    }
 }
 
 impl super::Context {
