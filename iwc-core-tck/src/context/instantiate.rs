@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use iwc_core_ast::{
-    traversal::ty::{default_traverse_ty, Traversal},
+    ty::traversal::{default_traverse_ty, Traversal},
     ty::{Type, TypeIdx, TypeVariableBinder},
 };
 use smol_str::SmolStr;

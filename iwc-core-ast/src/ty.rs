@@ -1,3 +1,6 @@
+pub mod pretty;
+pub mod traversal;
+
 use iwc_arena::Idx;
 use smol_str::SmolStr;
 
