@@ -1,4 +1,6 @@
 pub mod environment;
+pub mod infer;
+pub mod instantiate;
 pub mod unify;
 pub mod volatile;
 
@@ -7,7 +9,7 @@ use std::collections::HashMap;
 use iwc_arena::Arena;
 use iwc_core_ast::{
     expr::Expr,
-    ty::{Type, TypeIdx},
+    ty::{Assertion, Type, TypeIdx},
 };
 use smol_str::SmolStr;
 
@@ -33,6 +35,7 @@ pub struct Context {
 
 #[derive(Debug)]
 pub enum Constraint {
+    ClassAssertion(Assertion),
     UnifyDeep(usize, usize),
     UnifySolve(usize, TypeIdx),
 }

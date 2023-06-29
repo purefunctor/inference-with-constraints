@@ -2,7 +2,7 @@ pub mod context;
 
 #[cfg(test)]
 mod tests {
-    use iwc_core_ast::ty::Type;
+    use iwc_core_ast::{expr::Expr, ty::Type};
 
     use crate::context::Context;
 
@@ -33,5 +33,22 @@ mod tests {
 
         context.unify(f, g).unwrap();
         dbg!(context.volatile.constraints);
+    }
+
+    #[test]
+    pub fn lambda_inference() {
+        let mut context = Context::default();
+
+        let b = context
+            .volatile
+            .expr_arena
+            .allocate(Expr::Variable { name: "a".into() });
+        let f = context.volatile.expr_arena.allocate(Expr::Lambda {
+            arguments: vec!["a".into(), "b".into()],
+            body: b,
+        });
+
+        let t = context.infer(f).unwrap();
+        dbg!(&context.volatile.type_arena[t]);
     }
 }
