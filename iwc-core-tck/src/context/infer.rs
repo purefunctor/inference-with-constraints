@@ -34,31 +34,38 @@ impl Context {
                 let arguments = arguments.clone();
                 let body = *body;
 
-                let result =
-                    self.with_unification_variables(&arguments, |context| context.infer(body))?;
+                let variables: Vec<_> = arguments
+                    .into_iter()
+                    .map(|name| (name, self.volatile.fresh_unification()))
+                    .collect();
 
-                Ok(arguments.iter().rev().fold(result, |result, _| {
-                    let argument = self.volatile.fresh_unification();
-                    self.volatile
-                        .type_arena
-                        .allocate(Type::Function { argument, result })
-                }))
+                let result =
+                    self.with_unification_variables(&variables, |context| context.infer(body))?;
+
+                Ok(variables
+                    .into_iter()
+                    .rev()
+                    .fold(result, |result, (_, argument)| {
+                        self.volatile
+                            .type_arena
+                            .allocate(Type::Function { argument, result })
+                    }))
             }
         }
     }
 
     fn with_unification_variables<R>(
         &mut self,
-        arguments: &[SmolStr],
+        variables: &[(SmolStr, TypeIdx)],
         action: impl FnOnce(&mut Self) -> R,
     ) -> R {
-        for argument in arguments {
-            let unification = self.volatile.fresh_unification();
-            self.environment.insert_value_binding(argument, unification)
+        for (variable, unification) in variables {
+            self.environment
+                .insert_value_binding(variable, *unification)
         }
         let result = action(self);
-        for argument in arguments {
-            self.environment.remove_value_binding(argument)
+        for (variable, _) in variables {
+            self.environment.remove_value_binding(variable)
         }
         result
     }
