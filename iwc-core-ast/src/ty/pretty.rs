@@ -4,20 +4,22 @@ use iwc_arena::Arena;
 
 use crate::ty::{Type, TypeIdx, TypeVariableBinder};
 
-pub fn pretty_print(type_arena: &Arena<Type>, ty_idx: TypeIdx) -> String {
+use super::Assertion;
+
+pub fn pretty_print_ty(type_arena: &Arena<Type>, ty_idx: TypeIdx) -> String {
     match &type_arena[ty_idx] {
         Type::Constructor { name } => format!("{}", name),
-        Type::Variable { name, rank } => format!("{}@{}", name, rank),
+        Type::Variable { name, rank } => format!("{}_{}", name, rank),
         Type::Unification { name } => format!("?{}", name),
         Type::Function { argument, result } => format!(
             "({} -> {})",
-            pretty_print(type_arena, *argument),
-            pretty_print(type_arena, *result)
+            pretty_print_ty(type_arena, *argument),
+            pretty_print_ty(type_arena, *result)
         ),
         Type::Application { function, argument } => format!(
             "({} {})",
-            pretty_print(type_arena, *function),
-            pretty_print(type_arena, *argument),
+            pretty_print_ty(type_arena, *function),
+            pretty_print_ty(type_arena, *argument),
         ),
         Type::Forall {
             variables,
@@ -25,14 +27,43 @@ pub fn pretty_print(type_arena: &Arena<Type>, ty_idx: TypeIdx) -> String {
             ty,
         } => {
             let mut result = String::new();
-            write!(result, "forall ").unwrap();
+            write!(result, "(forall_{} ", rank).unwrap();
             for TypeVariableBinder { name } in variables {
                 write!(result, "{}", name).unwrap();
             }
-            write!(result, "@ {}. ", rank).unwrap();
-            write!(result, "{}", pretty_print(type_arena, *ty)).unwrap();
+            write!(result, ". {})", pretty_print_ty(type_arena, *ty)).unwrap();
             result
         }
-        Type::Constrained { assertions, ty } => pretty_print(type_arena, *ty),
+        Type::Constrained { assertions, ty } => {
+            format!(
+                "{} => {}",
+                pretty_print_assertions(type_arena, assertions),
+                pretty_print_ty(type_arena, *ty)
+            )
+        }
     }
+}
+
+pub fn pretty_print_assertions(type_arena: &Arena<Type>, assertions: &[Assertion]) -> String {
+    let mut result = String::new();
+
+    let mut assertions = assertions.iter().peekable();
+
+    write!(result, "(").unwrap();
+    while let Some(assertion) = assertions.next() {
+        write!(result, "{}", assertion.name).unwrap();
+        let mut arguments = assertion.arguments.iter().peekable();
+        while let Some(argument) = arguments.next() {
+            write!(result, " {}", pretty_print_ty(type_arena, *argument)).unwrap();
+            if arguments.peek().is_some() {
+                write!(result, ", ").unwrap();
+            }
+        }
+        if assertions.peek().is_some() {
+            write!(result, ", ").unwrap();
+        }
+    }
+    write!(result, ")").unwrap();
+
+    result
 }
