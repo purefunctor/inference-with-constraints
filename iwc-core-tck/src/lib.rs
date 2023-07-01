@@ -3,7 +3,10 @@ pub mod solver;
 
 #[cfg(test)]
 mod tests {
-    use iwc_core_ast::{ty::{Type, TypeVariableBinder, pretty::pretty_print_ty}, expr::Expr};
+    use iwc_core_ast::{
+        expr::Expr,
+        ty::{pretty::pretty_print_ty, Type, TypeVariableBinder},
+    };
 
     use crate::context::Context;
 
@@ -48,15 +51,42 @@ mod tests {
         let mut context = default_context();
 
         let identity_zero = {
-            let identity = context.volatile.expr_arena.allocate(Expr::Variable { name: "identity".into() });
-            let zero = context.volatile.expr_arena.allocate(Expr::Variable { name: "zero".into() });
-            context.volatile.expr_arena.allocate(Expr::Application { function: identity, arguments: vec![zero] })
+            let identity = context.volatile.expr_arena.allocate(Expr::Variable {
+                name: "identity".into(),
+            });
+            let zero = context.volatile.expr_arena.allocate(Expr::Variable {
+                name: "zero".into(),
+            });
+            context.volatile.expr_arena.allocate(Expr::Application {
+                function: identity,
+                arguments: vec![zero],
+            })
         };
 
         let ty = context.infer(identity_zero).unwrap();
         println!("{}", pretty_print_ty(&context.volatile.type_arena, ty));
 
         let mut solver = context.solver();
-        solver.solve().unwrap();
+
+        let mut constraints = solver.take_constraints();
+
+        constraints.reverse();
+
+        dbg!(&constraints);
+        dbg!(&solver.unifications);
+        dbg!(&solver.unsolved_deep);
+        println!();
+
+        constraints = solver.step(constraints).unwrap();
+        dbg!(&constraints);
+        dbg!(&solver.unifications);
+        dbg!(&solver.unsolved_deep);
+        println!();
+
+        constraints = solver.step(constraints).unwrap();
+        dbg!(&constraints);
+        dbg!(&solver.unifications);
+        dbg!(&solver.unsolved_deep);
+        println!();
     }
 }
