@@ -21,7 +21,7 @@ mod tests {
             name: "Unit".into(),
         });
         let f = context.volatile.type_arena.allocate(Type::Function {
-            argument: unit,
+            arguments: vec![unit],
             result: unit,
         });
 
@@ -34,7 +34,7 @@ mod tests {
             .type_arena
             .allocate(Type::Unification { name: 1 });
         let g = context.volatile.type_arena.allocate(Type::Function {
-            argument: u_zero,
+            arguments: vec![u_zero],
             result: u_one,
         });
 
@@ -72,13 +72,9 @@ mod tests {
                 name: "a".into(),
                 rank: 0,
             });
-            let a_boolean = context.volatile.type_arena.allocate(Type::Function {
-                argument: a,
-                result: boolean,
-            });
             let a_a_boolean = context.volatile.type_arena.allocate(Type::Function {
-                argument: a,
-                result: a_boolean,
+                arguments: vec![a, a],
+                result: boolean,
             });
             let eq_a_a_boolean = context.volatile.type_arena.allocate(Type::Constrained {
                 assertions: vec![
@@ -123,5 +119,56 @@ mod tests {
             "{}",
             pretty_print_assertions(&context.volatile.type_arena, &assertions)
         );
+    }
+
+    #[test]
+    pub fn application_inference() {
+        let mut context = Context::default();
+
+        let identity = {
+            let a = context.volatile.type_arena.allocate(Type::Variable {
+                name: "a".into(),
+                rank: 0,
+            });
+            let a_to_a = context.volatile.type_arena.allocate(Type::Function {
+                arguments: vec![a],
+                result: a,
+            });
+            context.volatile.type_arena.allocate(Type::Forall {
+                variables: vec![TypeVariableBinder { name: "a".into() }],
+                rank: 0,
+                ty: a_to_a,
+            })
+        };
+
+        let zero = context
+            .volatile
+            .type_arena
+            .allocate(Type::Constructor { name: "Int".into() });
+
+        context
+            .environment
+            .insert_value_binding("identity", identity);
+
+        context.environment.insert_value_binding("zero", zero);
+
+        let identity_zero = {
+            let identity = context.volatile.expr_arena.allocate(Expr::Variable { name: "identity".into() });
+            let zero = context.volatile.expr_arena.allocate(Expr::Variable { name: "zero".into() });
+            context.volatile.expr_arena.allocate(Expr::Application { function: identity, argument: zero })
+        };
+
+        let ty = context.infer(identity_zero).unwrap();
+        println!("{}", pretty_print_ty(&context.volatile.type_arena, ty));
+
+        for constraint in context.volatile.constraints {
+            if let Constraint::UnifySolve(name, ty) = constraint {
+                println!("?{} ~ {}", name, pretty_print_ty(&context.volatile.type_arena, ty));
+            }
+            if let Constraint::UnifyDeep(u, t) = constraint {
+                println!("?{} ~ ?{}", u, t);
+            }
+
+        }
     }
 }

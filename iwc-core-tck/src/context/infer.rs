@@ -21,10 +21,10 @@ impl Context {
                 let argument = self.infer(argument)?;
                 let result = self.volatile.fresh_unification();
 
-                let medium = self
-                    .volatile
-                    .type_arena
-                    .allocate(Type::Function { argument, result });
+                let medium = self.volatile.type_arena.allocate(Type::Function {
+                    arguments: vec![argument],
+                    result,
+                });
 
                 self.unify(function, medium)?;
 
@@ -42,14 +42,15 @@ impl Context {
                 let result =
                     self.with_unification_variables(&variables, |context| context.infer(body))?;
 
-                Ok(variables
+                let arguments = variables
                     .into_iter()
-                    .rev()
-                    .fold(result, |result, (_, argument)| {
-                        self.volatile
-                            .type_arena
-                            .allocate(Type::Function { argument, result })
-                    }))
+                    .map(|(_, argument)| argument)
+                    .collect();
+
+                Ok(self
+                    .volatile
+                    .type_arena
+                    .allocate(Type::Function { arguments, result }))
             }
         }
     }

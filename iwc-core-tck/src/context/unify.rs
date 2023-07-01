@@ -1,3 +1,5 @@
+use std::iter::zip;
+
 use anyhow::bail;
 use iwc_core_ast::ty::{Assertion, Type, TypeIdx};
 
@@ -60,21 +62,24 @@ impl Context {
             // Function
             (
                 Type::Function {
-                    argument: t_argument,
+                    arguments: t_arguments,
                     result: t_result,
                 },
                 Type::Function {
-                    argument: u_argument,
+                    arguments: u_arguments,
                     result: u_result,
                 },
             ) => {
-                let t_argument = *t_argument;
-                let u_argument = *u_argument;
+                let t_arguments = t_arguments.clone();
+                let u_arguments = u_arguments.clone();
 
                 let t_result = *t_result;
                 let u_result = *u_result;
 
-                self.unify(t_argument, u_argument)?;
+                for (t_argument, u_argument) in zip(t_arguments, u_arguments) {
+                    self.unify(t_argument, u_argument)?;
+                }
+
                 self.unify(t_result, u_result)?;
             }
             // Application
@@ -110,8 +115,11 @@ impl Context {
             Type::Constructor { .. } => false,
             Type::Variable { .. } => false,
             Type::Unification { name: t_name } => *t_name == u_name,
-            Type::Function { argument, result } => {
-                self.occurs_check(*argument, u_name) || self.occurs_check(*result, u_name)
+            Type::Function { arguments, result } => {
+                arguments
+                    .iter()
+                    .any(|argument| self.occurs_check(*argument, u_name))
+                    || self.occurs_check(*result, u_name)
             }
             Type::Application { function, argument } => {
                 self.occurs_check(*function, u_name) || self.occurs_check(*argument, u_name)

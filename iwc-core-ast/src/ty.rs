@@ -30,7 +30,7 @@ pub enum Type {
         name: usize,
     },
     Function {
-        argument: TypeIdx,
+        arguments: Vec<TypeIdx>,
         result: TypeIdx,
     },
     Application {

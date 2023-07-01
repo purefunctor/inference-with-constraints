@@ -11,11 +11,19 @@ pub fn pretty_print_ty(type_arena: &Arena<Type>, ty_idx: TypeIdx) -> String {
         Type::Constructor { name } => format!("{}", name),
         Type::Variable { name, rank } => format!("{}_{}", name, rank),
         Type::Unification { name } => format!("?{}", name),
-        Type::Function { argument, result } => format!(
-            "({} -> {})",
-            pretty_print_ty(type_arena, *argument),
-            pretty_print_ty(type_arena, *result)
-        ),
+        Type::Function { arguments, result } => {
+            let mut accumulator = String::new();
+            for argument in arguments {
+                write!(
+                    accumulator,
+                    "{} -> ",
+                    pretty_print_ty(type_arena, *argument)
+                )
+                .unwrap();
+            }
+            write!(accumulator, "{}", pretty_print_ty(type_arena, *result)).unwrap();
+            accumulator
+        }
         Type::Application { function, argument } => format!(
             "({} {})",
             pretty_print_ty(type_arena, *function),
