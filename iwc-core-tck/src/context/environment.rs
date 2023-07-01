@@ -32,15 +32,3 @@ impl super::Environment {
         self.constructor_bindings.remove(key);
     }
 }
-
-impl super::Context {
-    pub fn with_value_binding<F, R>(&mut self, key: &str, value: TypeIdx, action: F) -> R
-    where
-        F: FnOnce(&mut Self) -> R,
-    {
-        self.environment.insert_value_binding(key, value);
-        let result = action(self);
-        self.environment.remove_value_binding(key);
-        result
-    }
-}
