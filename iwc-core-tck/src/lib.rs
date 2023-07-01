@@ -1,8 +1,9 @@
 pub mod context;
+pub mod solver;
 
 #[cfg(test)]
 mod tests {
-    use iwc_core_ast::ty::{Type, TypeVariableBinder};
+    use iwc_core_ast::{ty::{Type, TypeVariableBinder, pretty::pretty_print_ty}, expr::Expr};
 
     use crate::context::Context;
 
@@ -40,5 +41,22 @@ mod tests {
             .insert_value_binding("identity", identity_ty);
 
         context
+    }
+
+    #[test]
+    fn unification_solving() {
+        let mut context = default_context();
+
+        let identity_zero = {
+            let identity = context.volatile.expr_arena.allocate(Expr::Variable { name: "identity".into() });
+            let zero = context.volatile.expr_arena.allocate(Expr::Variable { name: "zero".into() });
+            context.volatile.expr_arena.allocate(Expr::Application { function: identity, arguments: vec![zero] })
+        };
+
+        let ty = context.infer(identity_zero).unwrap();
+        println!("{}", pretty_print_ty(&context.volatile.type_arena, ty));
+
+        let mut solver = context.solver();
+        solver.solve().unwrap();
     }
 }

@@ -9,9 +9,11 @@ use std::collections::HashMap;
 use iwc_arena::Arena;
 use iwc_core_ast::{
     expr::Expr,
-    ty::{Assertion, Type, TypeIdx},
+    ty::{Type, TypeIdx},
 };
 use smol_str::SmolStr;
+
+use crate::solver::{Constraint, Solver};
 
 #[derive(Default)]
 pub struct Environment {
@@ -33,9 +35,8 @@ pub struct Context {
     pub(crate) volatile: Volatile,
 }
 
-#[derive(Debug)]
-pub enum Constraint {
-    ClassAssertion(Assertion),
-    UnifyDeep(usize, usize),
-    UnifySolve(usize, TypeIdx),
+impl Context {
+    pub fn solver(self) -> Solver {
+        Solver::new(self)
+    }
 }
