@@ -5,7 +5,7 @@ impl Solver {
         std::mem::take(&mut self.context.volatile.constraints)
     }
 
-    pub(crate) fn step(&mut self, constraints: Vec<Constraint>) -> anyhow::Result<Vec<Constraint>> {
+    pub(crate) fn step(&mut self, constraints: Vec<Constraint>) -> Vec<Constraint> {
         for constraint in constraints {
             match constraint {
                 Constraint::ClassAssertion(_) => continue,
@@ -49,14 +49,14 @@ impl Solver {
             }
         });
 
-        Ok(constraints)
+        constraints
     }
 
     pub fn solve(&mut self) -> anyhow::Result<()> {
         let mut constraints = self.take_constraints();
 
         loop {
-            constraints = self.step(constraints)?;
+            constraints = self.step(constraints);
 
             if constraints.is_empty() {
                 break;

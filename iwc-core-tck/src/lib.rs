@@ -78,14 +78,14 @@ mod tests {
         dbg!(&solver.unification_errors);
         println!();
 
-        constraints = solver.step(constraints).unwrap();
+        constraints = solver.step(constraints);
         dbg!(&constraints);
         dbg!(&solver.unification_solved);
         dbg!(&solver.unification_unsolved);
         dbg!(&solver.unification_errors);
         println!();
 
-        constraints = solver.step(constraints).unwrap();
+        constraints = solver.step(constraints);
         dbg!(&constraints);
         dbg!(&solver.unification_solved);
         dbg!(&solver.unification_unsolved);
