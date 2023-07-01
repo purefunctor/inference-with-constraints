@@ -32,7 +32,7 @@ impl Context {
                     .type_arena
                     .allocate(Type::Function { arguments, result });
 
-                self.unify(function, medium)?;
+                self.unify(function, medium);
 
                 Ok(result)
             }

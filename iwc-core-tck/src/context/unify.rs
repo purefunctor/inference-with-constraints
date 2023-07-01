@@ -1,12 +1,13 @@
 use std::iter::zip;
 
-use anyhow::bail;
 use iwc_core_ast::ty::{Assertion, Type, TypeIdx};
+
+use crate::solver::UnifyError;
 
 use super::{Constraint, Context};
 
 impl Context {
-    pub fn unify(&mut self, t_idx: TypeIdx, u_idx: TypeIdx) -> anyhow::Result<()> {
+    pub fn unify(&mut self, t_idx: TypeIdx, u_idx: TypeIdx) {
         match (
             &self.volatile.type_arena[t_idx],
             &self.volatile.type_arena[u_idx],
@@ -34,30 +35,22 @@ impl Context {
             // Left-Solve
             (t_ty, Type::Unification { name: u_name }) => {
                 if t_ty.is_polymorphic() {
-                    bail!(
-                        "Impredicative type while unifying {:?} ~ {:?}",
-                        t_ty,
-                        u_name
-                    );
+                    self.emit_error(UnifyError::ImpredicativeType(*u_name, t_idx));
+                } else if self.occurs_check(t_idx, *u_name) {
+                    self.emit_error(UnifyError::InfiniteType(*u_name, t_idx));
+                } else {
+                    self.emit_solve(*u_name, t_idx);
                 }
-                if self.occurs_check(t_idx, *u_name) {
-                    bail!("Infinite type while unifying {:?} ~ {:?}", t_ty, u_name);
-                }
-                self.emit_solve(*u_name, t_idx);
             }
             // Right-Solve
             (Type::Unification { name: t_name }, u_ty) => {
                 if u_ty.is_polymorphic() {
-                    bail!(
-                        "Impredicative type while unifying {:?} ~ {:?}",
-                        t_name,
-                        u_ty
-                    );
+                    self.emit_error(UnifyError::ImpredicativeType(*t_name, u_idx));
+                } else if self.occurs_check(u_idx, *t_name) {
+                    self.emit_error(UnifyError::InfiniteType(*t_name, u_idx));
+                } else {
+                    self.emit_solve(*t_name, u_idx)
                 }
-                if self.occurs_check(u_idx, *t_name) {
-                    bail!("Infinite type while unifying {:?} ~ {:?}", t_name, u_ty);
-                }
-                self.emit_solve(*t_name, u_idx)
             }
             // Function
             (
@@ -77,10 +70,10 @@ impl Context {
                 let u_result = *u_result;
 
                 for (t_argument, u_argument) in zip(t_arguments, u_arguments) {
-                    self.unify(t_argument, u_argument)?;
+                    self.unify(t_argument, u_argument);
                 }
 
-                self.unify(t_result, u_result)?;
+                self.unify(t_result, u_result);
             }
             // Application
             (
@@ -99,15 +92,13 @@ impl Context {
                 let t_argument = *t_argument;
                 let u_argument = *u_argument;
 
-                self.unify(t_function, u_function)?;
-                self.unify(t_argument, u_argument)?;
+                self.unify(t_function, u_function);
+                self.unify(t_argument, u_argument);
             }
-            (t_ty, u_ty) => {
-                bail!("Cannot unify {:?} ~ {:?}", t_ty, u_ty);
+            (_, _) => {
+                self.emit_error(UnifyError::CannotUnify(t_idx, u_idx));
             }
         }
-
-        Ok(())
     }
 
     fn occurs_check(&self, t_idx: TypeIdx, u_name: usize) -> bool {
@@ -145,5 +136,11 @@ impl Context {
         self.volatile
             .constraints
             .push(Constraint::UnifySolve(t_name, u_idx))
+    }
+
+    fn emit_error(&mut self, error: UnifyError) {
+        self.volatile
+            .constraints
+            .push(Constraint::UnifyError(error))
     }
 }

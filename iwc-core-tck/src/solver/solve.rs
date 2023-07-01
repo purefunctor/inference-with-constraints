@@ -14,7 +14,7 @@ impl Solver {
                     let t_ty = self.unification_solved.get(&t_name);
                     match (u_ty, t_ty) {
                         (Some(u_ty), Some(t_ty)) => {
-                            self.context.unify(*u_ty, *t_ty)?;
+                            self.context.unify(*u_ty, *t_ty);
                         }
                         (None, Some(t_ty)) => {
                             self.unification_solved.insert(u_name, *t_ty);
@@ -29,6 +29,9 @@ impl Solver {
                 }
                 Constraint::UnifySolve(name, ty) => {
                     self.unification_solved.insert(name, ty);
+                }
+                Constraint::UnifyError(error) => {
+                    self.unification_errors.push(error);
                 }
             }
         }
