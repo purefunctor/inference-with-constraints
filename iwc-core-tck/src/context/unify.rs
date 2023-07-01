@@ -52,7 +52,7 @@ impl Context {
                         u_ty
                     );
                 }
-                if self.occurs_check(t_idx, *t_name) {
+                if self.occurs_check(u_idx, *t_name) {
                     bail!("Infinite type while unifying {:?} ~ {:?}", t_name, u_ty);
                 }
                 self.emit_solve(*t_name, u_idx)
