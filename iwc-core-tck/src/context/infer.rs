@@ -11,20 +11,26 @@ impl Context {
         match &self.volatile.expr_arena[e_idx] {
             Expr::Constructor { name } => self.environment.lookup_constructor_binding(name),
             Expr::Variable { name } => self.environment.lookup_value_binding(name),
-            Expr::Application { function, argument } => {
+            Expr::Application {
+                function,
+                arguments,
+            } => {
                 let function = *function;
-                let argument = *argument;
+                let arguments = arguments.clone();
 
                 let function = self.infer(function)?;
                 let function = self.instantiate(function);
 
-                let argument = self.infer(argument)?;
+                let arguments = arguments
+                    .into_iter()
+                    .map(|argument| self.infer(argument))
+                    .collect::<anyhow::Result<_>>()?;
                 let result = self.volatile.fresh_unification();
 
-                let medium = self.volatile.type_arena.allocate(Type::Function {
-                    arguments: vec![argument],
-                    result,
-                });
+                let medium = self
+                    .volatile
+                    .type_arena
+                    .allocate(Type::Function { arguments, result });
 
                 self.unify(function, medium)?;
 

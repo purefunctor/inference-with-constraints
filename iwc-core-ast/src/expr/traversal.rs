@@ -14,16 +14,22 @@ pub fn default_traverse_expr<T: Traversal>(traversal: &mut T, expr_idx: ExprIdx)
     match &traversal.arena()[expr_idx] {
         Expr::Constructor { .. } => expr_idx,
         Expr::Variable { .. } => expr_idx,
-        Expr::Application { function, argument } => {
+        Expr::Application {
+            function,
+            arguments,
+        } => {
             let function = *function;
-            let argument = *argument;
+            let mut arguments = arguments.clone();
 
             let function = traversal.traverse_expr(function);
-            let argument = traversal.traverse_expr(argument);
+            for argument in &mut arguments {
+                *argument = traversal.traverse_expr(*argument);
+            }
 
-            traversal
-                .arena()
-                .allocate(Expr::Application { function, argument })
+            traversal.arena().allocate(Expr::Application {
+                function,
+                arguments,
+            })
         }
         Expr::Lambda { arguments, body } => {
             let arguments = arguments.clone();

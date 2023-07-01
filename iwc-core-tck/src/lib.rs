@@ -153,9 +153,16 @@ mod tests {
         context.environment.insert_value_binding("zero", zero);
 
         let identity_zero = {
-            let identity = context.volatile.expr_arena.allocate(Expr::Variable { name: "identity".into() });
-            let zero = context.volatile.expr_arena.allocate(Expr::Variable { name: "zero".into() });
-            context.volatile.expr_arena.allocate(Expr::Application { function: identity, argument: zero })
+            let identity = context.volatile.expr_arena.allocate(Expr::Variable {
+                name: "identity".into(),
+            });
+            let zero = context.volatile.expr_arena.allocate(Expr::Variable {
+                name: "zero".into(),
+            });
+            context.volatile.expr_arena.allocate(Expr::Application {
+                function: identity,
+                arguments: vec![zero],
+            })
         };
 
         let ty = context.infer(identity_zero).unwrap();
@@ -163,12 +170,15 @@ mod tests {
 
         for constraint in context.volatile.constraints {
             if let Constraint::UnifySolve(name, ty) = constraint {
-                println!("?{} ~ {}", name, pretty_print_ty(&context.volatile.type_arena, ty));
+                println!(
+                    "?{} ~ {}",
+                    name,
+                    pretty_print_ty(&context.volatile.type_arena, ty)
+                );
             }
             if let Constraint::UnifyDeep(u, t) = constraint {
                 println!("?{} ~ ?{}", u, t);
             }
-
         }
     }
 }

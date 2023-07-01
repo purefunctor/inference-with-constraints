@@ -16,7 +16,7 @@ pub enum Expr {
     },
     Application {
         function: ExprIdx,
-        argument: ExprIdx,
+        arguments: Vec<ExprIdx>,
     },
     Lambda {
         arguments: Vec<SmolStr>,
