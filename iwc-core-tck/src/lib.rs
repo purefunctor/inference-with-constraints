@@ -73,20 +73,20 @@ mod tests {
         constraints.reverse();
 
         dbg!(&constraints);
-        dbg!(&solver.unifications);
-        dbg!(&solver.unsolved_deep);
+        dbg!(&solver.unification_solved);
+        dbg!(&solver.unification_unsolved);
         println!();
 
         constraints = solver.step(constraints).unwrap();
         dbg!(&constraints);
-        dbg!(&solver.unifications);
-        dbg!(&solver.unsolved_deep);
+        dbg!(&solver.unification_solved);
+        dbg!(&solver.unification_unsolved);
         println!();
 
         constraints = solver.step(constraints).unwrap();
         dbg!(&constraints);
-        dbg!(&solver.unifications);
-        dbg!(&solver.unsolved_deep);
+        dbg!(&solver.unification_solved);
+        dbg!(&solver.unification_unsolved);
         println!();
     }
 }

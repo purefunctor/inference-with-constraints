@@ -8,16 +8,16 @@ use crate::context::Context;
 
 pub struct Solver {
     pub(crate) context: Context,
-    pub(crate) unifications: HashMap<usize, TypeIdx>,
-    pub(crate) unsolved_deep: Vec<(usize, usize)>,
+    pub(crate) unification_solved: HashMap<usize, TypeIdx>,
+    pub(crate) unification_unsolved: Vec<(usize, usize)>,
 }
 
 impl Solver {
     pub fn new(context: Context) -> Self {
         Self {
             context,
-            unifications: HashMap::new(),
-            unsolved_deep: Vec::new(),
+            unification_solved: HashMap::new(),
+            unification_unsolved: Vec::new(),
         }
     }
 }
