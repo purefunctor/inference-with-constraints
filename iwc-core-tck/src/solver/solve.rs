@@ -1,8 +1,6 @@
 use iwc_core_constraints::Constraint;
 
-use super::Solver;
-
-impl Solver {
+impl super::Solver {
     pub(crate) fn take_constraints(&mut self) -> Vec<Constraint> {
         std::mem::take(&mut self.context.volatile.constraints)
     }
