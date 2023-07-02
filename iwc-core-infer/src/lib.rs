@@ -53,8 +53,8 @@ impl Environment {
 
 #[derive(Default)]
 pub struct Volatile {
-    expr_arena: Arena<Expr>,
-    type_arena: Arena<Type>,
+    pub expr_arena: Arena<Expr>,
+    pub type_arena: Arena<Type>,
     fresh_index: usize,
 }
 
@@ -68,8 +68,8 @@ impl Volatile {
 
 #[derive(Default)]
 pub struct Infer {
-    environment: Environment,
-    volatile: Volatile,
+    pub environment: Environment,
+    pub volatile: Volatile,
     constraints: Vec<Constraint>,
 }
 
