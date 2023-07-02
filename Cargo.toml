@@ -4,4 +4,5 @@ members = [
     "iwc-core-ast",
     "iwc-core-constraint",
     "iwc-core-infer",
+    "iwc-core-solve",
 ]

@@ -39,6 +39,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "iwc-core-solve"
+version = "0.1.0"
+dependencies = [
+ "iwc-core-ast",
+ "iwc-core-constraint",
+ "iwc-core-infer",
+]
+
+[[package]]
 name = "serde"
 version = "1.0.164"
 source = "registry+https://github.com/rust-lang/crates.io-index"
