@@ -1,8 +1,10 @@
+pub mod infer;
 pub mod instantiate;
 pub mod unify;
 
 use std::collections::HashMap;
 
+use anyhow::Context;
 use iwc_arena::Arena;
 use iwc_core_ast::{
     expr::Expr,
@@ -15,6 +17,38 @@ use smol_str::SmolStr;
 pub struct Environment {
     constructor_bindings: HashMap<SmolStr, TypeIdx>,
     value_bindings: HashMap<SmolStr, TypeIdx>,
+}
+
+impl Environment {
+    pub fn lookup_value_binding(&mut self, key: &str) -> anyhow::Result<TypeIdx> {
+        self.value_bindings
+            .get(key)
+            .context(format!("No binding found {:?}", key))
+            .copied()
+    }
+
+    pub fn insert_value_binding(&mut self, key: &str, value: TypeIdx) {
+        self.value_bindings.insert(key.into(), value);
+    }
+
+    pub fn remove_value_binding(&mut self, key: &str) {
+        self.value_bindings.remove(key);
+    }
+
+    pub fn lookup_constructor_binding(&mut self, key: &str) -> anyhow::Result<TypeIdx> {
+        self.constructor_bindings
+            .get(key)
+            .context(format!("No constructor found {:?}", key))
+            .copied()
+    }
+
+    pub fn insert_constructor_binding(&mut self, key: &str, value: TypeIdx) {
+        self.constructor_bindings.insert(key.into(), value);
+    }
+
+    pub fn remove_constructor_binding(&mut self, key: &str) {
+        self.constructor_bindings.remove(key);
+    }
 }
 
 #[derive(Default)]
