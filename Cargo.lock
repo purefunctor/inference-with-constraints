@@ -15,20 +15,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "iwc-core-check"
+name = "iwc-core-constraint"
+version = "0.1.0"
+dependencies = [
+ "iwc-core-ast",
+]
+
+[[package]]
+name = "iwc-core-infer"
 version = "0.1.0"
 dependencies = [
  "iwc-arena",
  "iwc-core-ast",
  "iwc-core-constraint",
  "smol_str",
-]
-
-[[package]]
-name = "iwc-core-constraint"
-version = "0.1.0"
-dependencies = [
- "iwc-core-ast",
 ]
 
 [[package]]
