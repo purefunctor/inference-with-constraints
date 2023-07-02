@@ -21,12 +21,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "iwc-core-constraints"
+version = "0.1.0"
+dependencies = [
+ "iwc-core-ast",
+]
+
+[[package]]
 name = "iwc-core-tck"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "iwc-arena",
  "iwc-core-ast",
+ "iwc-core-constraints",
  "smol_str",
 ]
 

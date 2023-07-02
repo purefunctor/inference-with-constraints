@@ -1,4 +1,6 @@
-use super::{Constraint, Solver};
+use iwc_core_constraints::Constraint;
+
+use super::Solver;
 
 impl Solver {
     pub(crate) fn take_constraints(&mut self) -> Vec<Constraint> {

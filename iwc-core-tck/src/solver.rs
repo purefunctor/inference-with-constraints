@@ -2,7 +2,8 @@ pub mod solve;
 
 use std::collections::HashMap;
 
-use iwc_core_ast::ty::{Assertion, TypeIdx};
+use iwc_core_ast::ty::TypeIdx;
+use iwc_core_constraints::UnifyError;
 
 use crate::context::Context;
 
@@ -22,19 +23,4 @@ impl Solver {
             unification_errors: Vec::new(),
         }
     }
-}
-
-#[derive(Debug)]
-pub enum Constraint {
-    ClassAssertion(Assertion),
-    UnifyDeep(usize, usize),
-    UnifySolve(usize, TypeIdx),
-    UnifyError(UnifyError),
-}
-
-#[derive(Debug)]
-pub enum UnifyError {
-    CannotUnify(TypeIdx, TypeIdx),
-    ImpredicativeType(usize, TypeIdx),
-    InfiniteType(usize, TypeIdx),
 }

@@ -1,8 +1,7 @@
 use std::iter::zip;
 
 use iwc_core_ast::ty::{Assertion, Type, TypeIdx};
-
-use crate::solver::UnifyError;
+use iwc_core_constraints::UnifyError;
 
 use super::{Constraint, Context};
 

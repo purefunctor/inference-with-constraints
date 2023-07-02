@@ -2,5 +2,6 @@
 members = [
     "iwc-arena",
     "iwc-core-ast",
+    "iwc-core-constraints",
     "iwc-core-tck",
 ]

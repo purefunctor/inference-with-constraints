@@ -11,9 +11,10 @@ use iwc_core_ast::{
     expr::Expr,
     ty::{Type, TypeIdx},
 };
+use iwc_core_constraints::Constraint;
 use smol_str::SmolStr;
 
-use crate::solver::{Constraint, Solver};
+use crate::solver::Solver;
 
 #[derive(Default)]
 pub struct Environment {
