@@ -1,3 +1,4 @@
+pub mod instantiate;
 pub mod unify;
 
 use std::collections::HashMap;
@@ -21,6 +22,14 @@ pub struct Volatile {
     expr_arena: Arena<Expr>,
     type_arena: Arena<Type>,
     fresh_index: usize,
+}
+
+impl Volatile {
+    pub fn fresh_unification(&mut self) -> TypeIdx {
+        let name = self.fresh_index;
+        self.fresh_index += 1;
+        self.type_arena.allocate(Type::Unification { name })
+    }
 }
 
 #[derive(Default)]
