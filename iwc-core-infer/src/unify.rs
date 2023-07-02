@@ -60,6 +60,15 @@ impl super::Infer {
                     result: u_result,
                 },
             ) => {
+                if t_arguments.len() != u_arguments.len() {
+                    return self.emit_error(UnifyError::InvalidArity(
+                        t_idx,
+                        t_arguments.len(),
+                        u_idx,
+                        u_arguments.len(),
+                    ));
+                }
+
                 let t_arguments = t_arguments.clone();
                 let u_arguments = u_arguments.clone();
 
