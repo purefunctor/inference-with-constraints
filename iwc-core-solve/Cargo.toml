@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 iwc-core-ast = { version = "0.1.0", path = "../iwc-core-ast" }
 iwc-core-constraint = { version = "0.1.0", path = "../iwc-core-constraint" }
+iwc-core-error = { version = "0.1.0", path = "../iwc-core-error" }
 iwc-core-infer = { version = "0.1.0", path = "../iwc-core-infer" }

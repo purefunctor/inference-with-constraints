@@ -1,7 +1,8 @@
 use std::iter::zip;
 
 use iwc_core_ast::ty::{Assertion, Type, TypeIdx};
-use iwc_core_constraint::{Constraint, UnifyError};
+use iwc_core_constraint::Constraint;
+use iwc_core_error::UnifyError;
 
 impl super::Infer {
     pub fn unify(&mut self, t_idx: TypeIdx, u_idx: TypeIdx) {

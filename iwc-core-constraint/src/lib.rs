@@ -1,4 +1,5 @@
 use iwc_core_ast::ty::{Assertion, TypeIdx};
+use iwc_core_error::UnifyError;
 
 #[derive(Debug)]
 pub enum Constraint {
@@ -6,12 +7,4 @@ pub enum Constraint {
     UnifyDeep(usize, usize),
     UnifySolve(usize, TypeIdx),
     UnifyError(UnifyError),
-}
-
-#[derive(Debug)]
-pub enum UnifyError {
-    CannotUnify(TypeIdx, TypeIdx),
-    ImpredicativeType(usize, TypeIdx),
-    InfiniteType(usize, TypeIdx),
-    InvalidArity(TypeIdx, usize, TypeIdx, usize),
 }

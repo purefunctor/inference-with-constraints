@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use iwc_core_ast::ty::TypeIdx;
-use iwc_core_constraint::{Constraint, UnifyError};
+use iwc_core_constraint::Constraint;
+use iwc_core_error::UnifyError;
 use iwc_core_infer::Infer;
 
 pub struct Solve {

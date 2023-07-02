@@ -25,6 +25,14 @@ name = "iwc-core-constraint"
 version = "0.1.0"
 dependencies = [
  "iwc-core-ast",
+ "iwc-core-error",
+]
+
+[[package]]
+name = "iwc-core-error"
+version = "0.1.0"
+dependencies = [
+ "iwc-core-ast",
 ]
 
 [[package]]
@@ -35,6 +43,7 @@ dependencies = [
  "iwc-arena",
  "iwc-core-ast",
  "iwc-core-constraint",
+ "iwc-core-error",
  "smol_str",
 ]
 
@@ -44,6 +53,7 @@ version = "0.1.0"
 dependencies = [
  "iwc-core-ast",
  "iwc-core-constraint",
+ "iwc-core-error",
  "iwc-core-infer",
 ]
 
