@@ -8,5 +8,5 @@ edition = "2021"
 [dependencies]
 iwc-arena = { version = "0.1.0", path = "../iwc-arena" }
 iwc-core-ast = { version = "0.1.0", path = "../iwc-core-ast" }
-iwc-core-constraints = { version = "0.1.0", path = "../iwc-core-constraints" }
+iwc-core-constraint = { version = "0.1.0", path = "../iwc-core-constraint" }
 smol_str = "0.2.0"

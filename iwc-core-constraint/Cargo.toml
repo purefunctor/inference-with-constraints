@@ -1,5 +1,5 @@
 [package]
-name = "iwc-core-constraints"
+name = "iwc-core-constraint"
 version = "0.1.0"
 edition = "2021"
 

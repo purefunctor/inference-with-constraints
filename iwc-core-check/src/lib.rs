@@ -5,7 +5,7 @@ use iwc_core_ast::{
     expr::Expr,
     ty::{Type, TypeIdx},
 };
-use iwc_core_constraints::Constraint;
+use iwc_core_constraint::Constraint;
 use smol_str::SmolStr;
 
 #[derive(Default)]

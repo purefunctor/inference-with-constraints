@@ -20,12 +20,12 @@ version = "0.1.0"
 dependencies = [
  "iwc-arena",
  "iwc-core-ast",
- "iwc-core-constraints",
+ "iwc-core-constraint",
  "smol_str",
 ]
 
 [[package]]
-name = "iwc-core-constraints"
+name = "iwc-core-constraint"
 version = "0.1.0"
 dependencies = [
  "iwc-core-ast",
