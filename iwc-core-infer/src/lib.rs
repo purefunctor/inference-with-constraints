@@ -72,3 +72,9 @@ pub struct Infer {
     volatile: Volatile,
     constraints: Vec<Constraint>,
 }
+
+impl Infer {
+    pub fn take_constraints(&mut self) -> Vec<Constraint> {
+        std::mem::take(&mut self.constraints)
+    }
+}
