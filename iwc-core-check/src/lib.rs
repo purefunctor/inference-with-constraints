@@ -1,3 +1,5 @@
+pub mod unify;
+
 use std::collections::HashMap;
 
 use iwc_arena::Arena;
