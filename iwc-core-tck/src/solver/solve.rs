@@ -52,7 +52,7 @@ impl super::Solver {
         constraints
     }
 
-    pub fn solve(&mut self) -> anyhow::Result<()> {
+    pub fn solve(&mut self) {
         let mut constraints = self.take_constraints();
 
         loop {
@@ -62,7 +62,5 @@ impl super::Solver {
                 break;
             }
         }
-
-        Ok(())
     }
 }
