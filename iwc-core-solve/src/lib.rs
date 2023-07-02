@@ -12,6 +12,17 @@ pub struct Solve {
 }
 
 impl Solve {
+    pub fn new(infer: Infer) -> Self {
+        Self {
+            infer,
+            unification_solved: HashMap::new(),
+            unification_unsolved: Vec::new(),
+            unification_errors: Vec::new(),
+        }
+    }
+}
+
+impl Solve {
     pub(crate) fn step(&mut self, constraints: Vec<Constraint>) -> Vec<Constraint> {
         for constraint in constraints {
             match constraint {
@@ -72,8 +83,6 @@ impl Solve {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
     use iwc_core_ast::{
         expr::Expr,
         ty::{pretty::pretty_print_ty, Type, TypeVariableBinder},
@@ -138,12 +147,7 @@ mod tests {
         let ty = infer.infer(identity_zero).unwrap();
         println!("{}", pretty_print_ty(&infer.volatile.type_arena, ty));
 
-        let mut solver = Solve {
-            infer,
-            unification_solved: HashMap::new(),
-            unification_unsolved: Vec::new(),
-            unification_errors: Vec::new(),
-        };
+        let mut solver = Solve::new(infer);
 
         let mut constraints = solver.infer.take_constraints();
 
