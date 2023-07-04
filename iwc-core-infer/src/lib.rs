@@ -1,3 +1,4 @@
+pub mod check;
 pub mod infer;
 pub mod instantiate;
 pub mod unify;
