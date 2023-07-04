@@ -3,7 +3,8 @@ use iwc_core_error::UnifyError;
 
 #[derive(Debug)]
 pub enum Constraint {
-    ClassAssertion(Assertion),
+    ClassInfer(Assertion),
+    ClassCheck(Assertion),
     UnifyDeep(usize, usize),
     UnifySolve(usize, TypeIdx),
     UnifyError(UnifyError),

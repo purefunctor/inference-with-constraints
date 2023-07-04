@@ -27,7 +27,8 @@ impl Solve {
     pub(crate) fn step(&mut self, constraints: Vec<Constraint>) -> Vec<Constraint> {
         for constraint in constraints {
             match constraint {
-                Constraint::ClassAssertion(_) => unimplemented!("ClassAssertion"),
+                Constraint::ClassInfer(_) => unimplemented!("ClassInfer"),
+                Constraint::ClassCheck(_) => unimplemented!("ClassCheck"),
                 Constraint::UnifyDeep(u_name, t_name) => {
                     let u_ty = self.unification_solved.get(&u_name);
                     let t_ty = self.unification_solved.get(&t_name);

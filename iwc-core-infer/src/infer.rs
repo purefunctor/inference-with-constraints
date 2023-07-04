@@ -4,6 +4,8 @@ use iwc_core_ast::{
 };
 use smol_str::SmolStr;
 
+use crate::instantiate::InstantiateMode;
+
 impl super::Infer {
     pub fn infer(&mut self, e_idx: ExprIdx) -> anyhow::Result<TypeIdx> {
         match &self.volatile.expr_arena[e_idx] {
@@ -17,7 +19,7 @@ impl super::Infer {
                 let arguments = arguments.clone();
 
                 let function = self.infer(function)?;
-                let function = self.instantiate(function);
+                let function = self.instantiate(function, InstantiateMode::Infer);
 
                 let arguments = arguments
                     .into_iter()

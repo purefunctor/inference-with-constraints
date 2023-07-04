@@ -11,8 +11,13 @@ use super::Volatile;
 
 type Instantiations = HashMap<SmolStr, TypeIdx>;
 
+pub enum InstantiateMode {
+    Infer,
+    Check,
+}
+
 impl super::Infer {
-    pub fn instantiate(&mut self, t_idx: TypeIdx) -> TypeIdx {
+    pub fn instantiate(&mut self, t_idx: TypeIdx, mode: InstantiateMode) -> TypeIdx {
         if let Type::Forall {
             variables,
             rank,
@@ -33,7 +38,14 @@ impl super::Infer {
                 let ty = instantiate.traverse_ty(ty);
 
                 for assertion in assertions {
-                    self.constraints.push(Constraint::ClassAssertion(assertion))
+                    match mode {
+                        InstantiateMode::Infer => {
+                            self.constraints.push(Constraint::ClassInfer(assertion))
+                        }
+                        InstantiateMode::Check => {
+                            self.constraints.push(Constraint::ClassCheck(assertion))
+                        }
+                    }
                 }
 
                 ty
