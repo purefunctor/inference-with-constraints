@@ -51,10 +51,12 @@ dependencies = [
 name = "iwc-core-solve"
 version = "0.1.0"
 dependencies = [
+ "iwc-arena",
  "iwc-core-ast",
  "iwc-core-constraint",
  "iwc-core-error",
  "iwc-core-infer",
+ "smol_str",
 ]
 
 [[package]]

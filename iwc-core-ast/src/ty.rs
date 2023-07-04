@@ -1,12 +1,15 @@
+pub mod hash;
 pub mod pretty;
 pub mod traversal;
+
+use std::hash::Hash;
 
 use iwc_arena::Idx;
 use smol_str::SmolStr;
 
 pub type TypeIdx = Idx<Type>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash)]
 pub struct TypeVariableBinder {
     pub name: SmolStr,
 }
@@ -52,4 +55,10 @@ impl Type {
     pub fn is_polymorphic(&self) -> bool {
         matches!(self, Self::Forall { .. })
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct Instance {
+    pub assertion: Assertion,
+    pub dependencies: Vec<Assertion>,
 }
