@@ -15,11 +15,11 @@ impl super::Infer {
             &self.volatile.type_arena[t_idx],
         ) {
             (Expr::Constructor { name }, _) => {
-                let u_idx = self.environment.lookup_constructor_binding(name)?;
+                let u_idx = self.environment.lookup_constructor(name)?;
                 self.unify(t_idx, u_idx);
             }
             (Expr::Variable { name }, _) => {
-                let u_idx = self.environment.lookup_value_binding(name)?;
+                let u_idx = self.environment.lookup_value(name)?;
                 self.unify(t_idx, u_idx);
             }
             (
@@ -61,14 +61,14 @@ impl super::Infer {
                 let result = *result;
 
                 for (name, ty) in zip(&arguments_expr, arguments_ty) {
-                    self.environment.insert_value_binding(name, ty);
+                    self.environment.insert_value(name, ty);
                 }
 
                 let body = self.infer(body)?;
                 self.unify(body, result);
 
                 for name in &arguments_expr {
-                    self.environment.remove_value_binding(name);
+                    self.environment.remove_value(name);
                 }
             }
             (e, t) => {

@@ -9,8 +9,8 @@ use crate::instantiate::InstantiateMode;
 impl super::Infer {
     pub fn infer(&mut self, e_idx: ExprIdx) -> anyhow::Result<TypeIdx> {
         match &self.volatile.expr_arena[e_idx] {
-            Expr::Constructor { name } => self.environment.lookup_constructor_binding(name),
-            Expr::Variable { name } => self.environment.lookup_value_binding(name),
+            Expr::Constructor { name } => self.environment.lookup_constructor(name),
+            Expr::Variable { name } => self.environment.lookup_value(name),
             Expr::Application {
                 function,
                 arguments,
@@ -68,11 +68,11 @@ impl super::Infer {
     ) -> R {
         for (variable, unification) in variables {
             self.environment
-                .insert_value_binding(variable, *unification)
+                .insert_value(variable, *unification)
         }
         let result = action(self);
         for (variable, _) in variables {
-            self.environment.remove_value_binding(variable)
+            self.environment.remove_value(variable)
         }
         result
     }

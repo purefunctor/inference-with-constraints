@@ -5,9 +5,9 @@ use std::{
 
 use iwc_arena::Arena;
 use iwc_core_ast::ty::{
-    assertion_hash,
+    hash::hash_assertion,
     pretty::{pretty_print_assertions, pretty_print_ty},
-    Assertion, Type, TypeIdx,
+    Assertion, Type, TypeIdx, Instance,
 };
 use iwc_core_constraint::Constraint;
 use iwc_core_error::UnifyError;
@@ -44,12 +44,6 @@ impl Solve {
     }
 
     fn entail(&mut self, assertion: Assertion) {
-        #[derive(Debug)]
-        struct Instance {
-            assertion: Assertion,
-            dependencies: Vec<Assertion>,
-        }
-
         let a = self.type_arena_mut().allocate(Type::Variable {
             name: "a".into(),
             rank: 0,
@@ -93,6 +87,13 @@ impl Solve {
                     pretty_print_ty(&self.infer.volatile.type_arena, a)
                 );
             }
+
+            for dependency in &instance.dependencies {
+                println!(
+                    "{}",
+                    pretty_print_assertions(&self.infer.volatile.type_arena, &[dependency.clone()])
+                )
+            }
         }
     }
 
@@ -102,7 +103,7 @@ impl Solve {
                 Constraint::ClassInfer(assertion) => self.entail(assertion),
                 Constraint::ClassCheck(assertion) => {
                     self.entailment_evidences
-                        .insert(assertion_hash(&self.infer.volatile.type_arena, &assertion));
+                        .insert(hash_assertion(&self.infer.volatile.type_arena, &assertion));
                 }
                 Constraint::UnifyDeep(u_name, t_name) => {
                     let u_ty = self.unification_solved.get(&u_name);
@@ -175,13 +176,13 @@ mod tests {
         let unit_ty = context.volatile.type_arena.allocate(Type::Constructor {
             name: "Unit".into(),
         });
-        context.environment.insert_value_binding("unit", unit_ty);
+        context.environment.insert_value("unit", unit_ty);
 
         let int_ty = context
             .volatile
             .type_arena
             .allocate(Type::Constructor { name: "Int".into() });
-        context.environment.insert_value_binding("zero", int_ty);
+        context.environment.insert_value("zero", int_ty);
 
         let identity_ty = {
             let a_ty = context.volatile.type_arena.allocate(Type::Variable {
@@ -200,7 +201,7 @@ mod tests {
         };
         context
             .environment
-            .insert_value_binding("identity", identity_ty);
+            .insert_value("identity", identity_ty);
 
         context
     }

@@ -16,39 +16,39 @@ use smol_str::SmolStr;
 
 #[derive(Default)]
 pub struct Environment {
-    constructor_bindings: HashMap<SmolStr, TypeIdx>,
-    value_bindings: HashMap<SmolStr, TypeIdx>,
+    constructors: HashMap<SmolStr, TypeIdx>,
+    values: HashMap<SmolStr, TypeIdx>,
 }
 
 impl Environment {
-    pub fn lookup_value_binding(&mut self, key: &str) -> anyhow::Result<TypeIdx> {
-        self.value_bindings
+    pub fn lookup_value(&mut self, key: &str) -> anyhow::Result<TypeIdx> {
+        self.values
             .get(key)
             .context(format!("No binding found {:?}", key))
             .copied()
     }
 
-    pub fn insert_value_binding(&mut self, key: &str, value: TypeIdx) {
-        self.value_bindings.insert(key.into(), value);
+    pub fn insert_value(&mut self, key: &str, value: TypeIdx) {
+        self.values.insert(key.into(), value);
     }
 
-    pub fn remove_value_binding(&mut self, key: &str) {
-        self.value_bindings.remove(key);
+    pub fn remove_value(&mut self, key: &str) {
+        self.values.remove(key);
     }
 
-    pub fn lookup_constructor_binding(&mut self, key: &str) -> anyhow::Result<TypeIdx> {
-        self.constructor_bindings
+    pub fn lookup_constructor(&mut self, key: &str) -> anyhow::Result<TypeIdx> {
+        self.constructors
             .get(key)
             .context(format!("No constructor found {:?}", key))
             .copied()
     }
 
-    pub fn insert_constructor_binding(&mut self, key: &str, value: TypeIdx) {
-        self.constructor_bindings.insert(key.into(), value);
+    pub fn insert_constructor(&mut self, key: &str, value: TypeIdx) {
+        self.constructors.insert(key.into(), value);
     }
 
-    pub fn remove_constructor_binding(&mut self, key: &str) {
-        self.constructor_bindings.remove(key);
+    pub fn remove_constructor(&mut self, key: &str) {
+        self.constructors.remove(key);
     }
 }
 
