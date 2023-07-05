@@ -9,7 +9,7 @@ use anyhow::Context;
 use iwc_arena::Arena;
 use iwc_core_ast::{
     expr::Expr,
-    ty::{Type, TypeIdx},
+    ty::{Instance, Type, TypeIdx},
 };
 use iwc_core_constraint::Constraint;
 use smol_str::SmolStr;
@@ -18,6 +18,7 @@ use smol_str::SmolStr;
 pub struct Environment {
     constructors: HashMap<SmolStr, TypeIdx>,
     values: HashMap<SmolStr, TypeIdx>,
+    instances: HashMap<SmolStr, Vec<Instance>>,
 }
 
 impl Environment {
@@ -49,6 +50,19 @@ impl Environment {
 
     pub fn remove_constructor(&mut self, key: &str) {
         self.constructors.remove(key);
+    }
+
+    pub fn insert_instance(&mut self, key: &str, value: Instance) {
+        self.instances
+            .entry(key.into())
+            .or_insert_with(|| vec![])
+            .push(value);
+    }
+
+    pub fn lookup_instance(&mut self, key: &str) -> anyhow::Result<&Vec<Instance>> {
+        self.instances
+            .get(key)
+            .context(format!("No instance found {:?}", key))
     }
 }
 

@@ -67,8 +67,7 @@ impl super::Infer {
         action: impl FnOnce(&mut Self) -> R,
     ) -> R {
         for (variable, unification) in variables {
-            self.environment
-                .insert_value(variable, *unification)
+            self.environment.insert_value(variable, *unification)
         }
         let result = action(self);
         for (variable, _) in variables {

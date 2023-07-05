@@ -1,18 +1,11 @@
-use std::{
-    collections::{HashMap, HashSet},
-    iter::zip,
-};
+pub mod entail;
+pub mod solve;
 
-use iwc_arena::Arena;
-use iwc_core_ast::ty::{
-    hash::hash_assertion,
-    pretty::{pretty_print_assertions, pretty_print_ty},
-    Assertion, Type, TypeIdx, Instance,
-};
-use iwc_core_constraint::Constraint;
+use std::collections::{HashMap, HashSet};
+
+use iwc_core_ast::ty::TypeIdx;
 use iwc_core_error::UnifyError;
 use iwc_core_infer::Infer;
-use smol_str::SmolStr;
 
 pub struct Solve {
     infer: Infer,
@@ -34,136 +27,11 @@ impl Solve {
     }
 }
 
-impl Solve {
-    fn type_arena(&mut self) -> &Arena<Type> {
-        &self.infer.volatile.type_arena
-    }
-
-    fn type_arena_mut(&mut self) -> &mut Arena<Type> {
-        &mut self.infer.volatile.type_arena
-    }
-
-    fn entail(&mut self, assertion: Assertion) {
-        let a = self.type_arena_mut().allocate(Type::Variable {
-            name: "a".into(),
-            rank: 0,
-        });
-        let array = self.type_arena_mut().allocate(Type::Constructor {
-            name: "Array".into(),
-        });
-        let array_a = self.type_arena_mut().allocate(Type::Application {
-            function: array,
-            argument: a,
-        });
-
-        let instances: HashMap<SmolStr, Vec<Instance>> = [(
-            "Eq".into(),
-            vec![Instance {
-                assertion: Assertion {
-                    name: "Eq".into(),
-                    arguments: vec![array_a],
-                },
-                dependencies: vec![Assertion {
-                    name: "Eq".into(),
-                    arguments: vec![a],
-                }],
-            }],
-        )]
-        .into_iter()
-        .collect();
-
-        let instances = instances.get(&assertion.name).unwrap();
-
-        for instance in instances {
-            let instance_arguments = &instance.assertion.arguments;
-            let assertion_arguments = &assertion.arguments;
-
-            for (i, a) in zip(instance_arguments, assertion_arguments) {
-                let i = *i;
-                let a = *a;
-                println!(
-                    "{} = {}",
-                    pretty_print_ty(&self.infer.volatile.type_arena, i),
-                    pretty_print_ty(&self.infer.volatile.type_arena, a)
-                );
-            }
-
-            for dependency in &instance.dependencies {
-                println!(
-                    "{}",
-                    pretty_print_assertions(&self.infer.volatile.type_arena, &[dependency.clone()])
-                )
-            }
-        }
-    }
-
-    pub(crate) fn step(&mut self, constraints: Vec<Constraint>) -> Vec<Constraint> {
-        for constraint in constraints {
-            match constraint {
-                Constraint::ClassInfer(assertion) => self.entail(assertion),
-                Constraint::ClassCheck(assertion) => {
-                    self.entailment_evidences
-                        .insert(hash_assertion(&self.infer.volatile.type_arena, &assertion));
-                }
-                Constraint::UnifyDeep(u_name, t_name) => {
-                    let u_ty = self.unification_solved.get(&u_name);
-                    let t_ty = self.unification_solved.get(&t_name);
-                    match (u_ty, t_ty) {
-                        (Some(u_ty), Some(t_ty)) => {
-                            self.infer.unify(*u_ty, *t_ty);
-                        }
-                        (None, Some(t_ty)) => {
-                            self.unification_solved.insert(u_name, *t_ty);
-                        }
-                        (Some(u_ty), None) => {
-                            self.unification_solved.insert(t_name, *u_ty);
-                        }
-                        (None, None) => {
-                            self.unification_unsolved.push((u_name, t_name));
-                        }
-                    }
-                }
-                Constraint::UnifySolve(name, ty) => {
-                    self.unification_solved.insert(name, ty);
-                }
-                Constraint::UnifyError(error) => {
-                    self.unification_errors.push(error);
-                }
-            }
-        }
-
-        let mut constraints = self.infer.take_constraints();
-
-        self.unification_unsolved.retain(|(u_name, t_name)| {
-            let u_ty = self.unification_solved.get(u_name);
-            let t_ty = self.unification_solved.get(t_name);
-            if u_ty.is_some() || t_ty.is_some() {
-                constraints.push(Constraint::UnifyDeep(*u_name, *t_name));
-                false
-            } else {
-                true
-            }
-        });
-
-        constraints
-    }
-
-    pub fn solve(&mut self) {
-        let mut constraints = self.infer.take_constraints();
-        loop {
-            constraints = self.step(constraints);
-            if constraints.is_empty() {
-                break;
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use iwc_core_ast::{
         expr::Expr,
-        ty::{pretty::pretty_print_ty, Assertion, Type, TypeVariableBinder},
+        ty::{pretty::pretty_print_ty, Assertion, Instance, Type, TypeVariableBinder},
     };
     use iwc_core_constraint::Constraint;
     use iwc_core_infer::Infer;
@@ -199,9 +67,7 @@ mod tests {
                 ty: a_to_a_ty,
             })
         };
-        context
-            .environment
-            .insert_value("identity", identity_ty);
+        context.environment.insert_value("identity", identity_ty);
 
         context
     }
@@ -267,6 +133,28 @@ mod tests {
             function: array,
             argument: u_zero,
         });
+        let v_a = solve.infer.volatile.type_arena.allocate(Type::Variable {
+            name: "a".into(),
+            rank: 0,
+        });
+        let array_a = solve.infer.volatile.type_arena.allocate(Type::Application {
+            function: array,
+            argument: v_a,
+        });
+
+        solve.infer.environment.insert_instance(
+            "Eq",
+            Instance {
+                assertion: Assertion {
+                    name: "Eq".into(),
+                    arguments: vec![array_a],
+                },
+                dependencies: vec![Assertion {
+                    name: "Eq".into(),
+                    arguments: vec![v_a],
+                }],
+            },
+        );
 
         let mut constraints = vec![
             Constraint::ClassCheck(Assertion {
