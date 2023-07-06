@@ -3,7 +3,6 @@ members = [
     "iwc-arena",
     "iwc-core-ast",
     "iwc-core-constraint",
+    "iwc-core-elaborate",
     "iwc-core-error",
-    "iwc-core-infer",
-    "iwc-core-solve",
 ]

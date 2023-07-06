@@ -1,0 +1,15 @@
+[package]
+name = "iwc-core-elaborate"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.71"
+concurrent-queue = "2.2.0"
+iwc-arena = { version = "0.1.0", path = "../iwc-arena" }
+iwc-core-ast = { version = "0.1.0", path = "../iwc-core-ast" }
+iwc-core-constraint = { version = "0.1.0", path = "../iwc-core-constraint" }
+iwc-core-error = { version = "0.1.0", path = "../iwc-core-error" }
+smol_str = "0.2.0"
