@@ -60,7 +60,7 @@ impl<'context> Solve<'context> {
         self.unification_deferred.retain(|(t_name, u_name)| {
             let t_idx = self.unification_solved.get(t_name).copied();
             let u_idx = self.unification_solved.get(u_name).copied();
-            if t_idx.is_some() && u_idx.is_some() {
+            if t_idx.is_some() || u_idx.is_some() {
                 self.context
                     .constraints
                     .push(Constraint::UnifyDeep(*t_name, *u_name))
