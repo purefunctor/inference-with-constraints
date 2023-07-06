@@ -46,8 +46,7 @@ impl<'context> Solve<'context> {
                             self.unification_solved.insert(u_name, t_idx);
                         }
                         (None, None) => {
-                            // Avoids infinite loops with unification
-                            // variables that never get solved.
+                            // Avoids infinite loops with unsolvable unifications.
                             self.unification_deferred.push((t_name, u_name));
                         }
                     }
