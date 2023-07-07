@@ -28,16 +28,29 @@ use crate::{context::Context, unify::Unify};
 eqI :: forall a. Eq a => a -> Boolean
 eqI a = eq [a] [a]
 
-?0 -> Boolean
+> forall a. Eq a => a -> Boolean
+> []
 
-[Evidence(Eq, ?0)]
+> Eq ?0 => ?0 -> Boolean
+> []
 
-?1 -> ?1 -> Boolean
+> ?0 -> Boolean
+> [Evidence(Eq ?0)]
 
-[Evidence(Eq, ?0), ?1 ~ [?0], ?1 ~ [?0], Entail(Eq, ?1)]
+check(eq [a] [a], ?0 -> Boolean)
 
-[Evidence(Eq, ?0), Entail(Eq, [?0])]
+> forall a. Eq a => a -> a -> Boolean
+> [Evidence(Eq ?0)]
 
+> Eq ?1 => ?1 -> ?1 -> Boolean
+> [Evidence(Eq ?0)]
+
+> ?1 -> ?1 -> Boolean
+> [Evidence(Eq ?0), Entail(Eq ?1)]
+
+check([a], ?1)
+
+unify(infer([a]), ?1)
  */
 
 pub struct Solve<'context> {
@@ -70,18 +83,7 @@ impl<'context> Solve<'context> {
             match constraint {
                 Constraint::ClassEntail(_) => todo!(),
                 Constraint::ClassEvidence(assertion) => {
-                    let evidence = hash_assertion(&self.context.volatile.type_arena, &assertion);
-                    for argument in &assertion.arguments {
-                        if let Type::Unification { name } =
-                            &self.context.volatile.type_arena[*argument]
-                        {
-                            self.entailment_unifications_in
-                                .entry(*name)
-                                .or_insert_with(|| vec![])
-                                .push(evidence);
-                        }
-                    }
-                    self.entailment_evidences.insert(evidence, assertion);
+                    self.insert_evidence(assertion);
                 }
                 Constraint::UnifyDeep(t_name, u_name) => {
                     let t_idx = self.unification_solved.get(&t_name).copied();
@@ -91,54 +93,10 @@ impl<'context> Solve<'context> {
                             self.as_unify().unify(t_idx, u_idx);
                         }
                         (None, Some(u_idx)) => {
-                            self.unification_solved.insert(t_name, u_idx);
-                            if let Some(evidences) = self.entailment_unifications_in.get(&t_name) {
-                                for evidence in evidences {
-                                    if let Some(mut assertion) =
-                                        self.entailment_evidences.get(evidence).cloned()
-                                    {
-                                        for argument in &mut assertion.arguments {
-                                            if let Type::Unification { name } =
-                                                &self.context.volatile.type_arena[*argument]
-                                            {
-                                                if t_name == *name {
-                                                    *argument = u_idx;
-                                                }
-                                            }
-                                        }
-                                        let evidence = hash_assertion(
-                                            &self.context.volatile.type_arena,
-                                            &assertion,
-                                        );
-                                        self.entailment_evidences.insert(evidence, assertion);
-                                    }
-                                }
-                            }
+                            self.insert_solved(t_name, u_idx);
                         }
                         (Some(t_idx), None) => {
-                            self.unification_solved.insert(u_name, t_idx);
-                            if let Some(evidences) = self.entailment_unifications_in.get(&u_name) {
-                                for evidence in evidences {
-                                    if let Some(mut assertion) =
-                                        self.entailment_evidences.get(evidence).cloned()
-                                    {
-                                        for argument in &mut assertion.arguments {
-                                            if let Type::Unification { name } =
-                                                &self.context.volatile.type_arena[*argument]
-                                            {
-                                                if u_name == *name {
-                                                    *argument = t_idx;
-                                                }
-                                            }
-                                        }
-                                        let evidence = hash_assertion(
-                                            &self.context.volatile.type_arena,
-                                            &assertion,
-                                        );
-                                        self.entailment_evidences.insert(evidence, assertion);
-                                    }
-                                }
-                            }
+                            self.insert_solved(u_name, t_idx);
                         }
                         (None, None) => {
                             // Avoids infinite loops with unsolvable unifications.
@@ -146,28 +104,8 @@ impl<'context> Solve<'context> {
                         }
                     }
                 }
-                Constraint::UnifySolve(t_name, u_ty) => {
-                    self.unification_solved.insert(t_name, u_ty);
-                    if let Some(evidences) = self.entailment_unifications_in.get(&t_name) {
-                        for evidence in evidences {
-                            if let Some(mut assertion) =
-                                self.entailment_evidences.get(evidence).cloned()
-                            {
-                                for argument in &mut assertion.arguments {
-                                    if let Type::Unification { name } =
-                                        &self.context.volatile.type_arena[*argument]
-                                    {
-                                        if t_name == *name {
-                                            *argument = u_ty;
-                                        }
-                                    }
-                                }
-                                let evidence =
-                                    hash_assertion(&self.context.volatile.type_arena, &assertion);
-                                self.entailment_evidences.insert(evidence, assertion);
-                            }
-                        }
-                    }
+                Constraint::UnifySolve(t_name, u_idx) => {
+                    self.insert_solved(t_name, u_idx);
                 }
                 Constraint::UnifyError(error) => {
                     self.unification_errors.push(error);
@@ -195,6 +133,45 @@ impl<'context> Solve<'context> {
             self.step();
             if self.context.constraints.is_empty() {
                 break;
+            }
+        }
+    }
+
+    fn insert_evidence(&mut self, assertion: Assertion) {
+        let evidence = hash_assertion(&self.context.volatile.type_arena, &assertion);
+        for argument in &assertion.arguments {
+            if let Type::Unification { name } = &self.context.volatile.type_arena[*argument] {
+                self.entailment_unifications_in
+                    .entry(*name)
+                    .or_insert_with(|| vec![])
+                    .push(evidence);
+            }
+        }
+        self.entailment_evidences.insert(evidence, assertion);
+    }
+
+    fn insert_solved(&mut self, name: usize, idx: TypeIdx) {
+        self.unification_solved.insert(name, idx);
+
+        if let Some(evidences) = self.entailment_unifications_in.get(&name) {
+            for evidence in evidences {
+                if let Some(assertion) = self.entailment_evidences.get(evidence) {
+                    let mut assertion = assertion.clone();
+
+                    for argument in &mut assertion.arguments {
+                        if let Type::Unification {
+                            name: argument_name,
+                        } = &self.context.volatile.type_arena[*argument]
+                        {
+                            if name == *argument_name {
+                                *argument = idx;
+                            }
+                        }
+                    }
+
+                    let evidence = hash_assertion(&self.context.volatile.type_arena, &assertion);
+                    self.entailment_evidences.insert(evidence, assertion);
+                }
             }
         }
     }
