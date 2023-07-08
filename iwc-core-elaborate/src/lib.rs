@@ -111,6 +111,6 @@ mod tests {
             arguments: vec![array_int],
         };
 
-        entail.entail(assertion).unwrap();
+        entail.entail(&assertion);
     }
 }

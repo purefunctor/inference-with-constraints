@@ -1,7 +1,7 @@
 use std::{collections::HashMap, iter::zip};
 
 use anyhow::Context;
-use iwc_core_ast::ty::{Assertion, Type, TypeIdx};
+use iwc_core_ast::ty::{pretty::pretty_print_ty, Assertion, Type, TypeIdx};
 use smol_str::SmolStr;
 
 pub struct Entail<'context> {
@@ -19,6 +19,12 @@ impl<'context> Entail<'context> {
         t_idx: TypeIdx,
         u_idx: TypeIdx,
     ) -> bool {
+        println!(
+            "{:?} = {:?}",
+            pretty_print_ty(&self.context.volatile.type_arena, t_idx),
+            pretty_print_ty(&self.context.volatile.type_arena, u_idx)
+        );
+
         match (
             &self.context.volatile.type_arena[t_idx],
             &self.context.volatile.type_arena[u_idx],
@@ -78,65 +84,67 @@ impl<'context> Entail<'context> {
                 self.match_argument(substitutions, t_function, u_function)
                     && self.match_argument(substitutions, t_argument, u_argument)
             }
+            (Type::Variable { name, .. }, _) => match substitutions.get(name) {
+                Some(t_idx) => self.match_argument(substitutions, *t_idx, u_idx),
+                None => {
+                    substitutions.insert(name.clone(), u_idx);
+                    true
+                }
+            },
+            (_, Type::Variable { name, .. }) => {
+                let u_idx = *substitutions.get(name).unwrap();
+                self.match_argument(substitutions, t_idx, u_idx)
+            }
             _ => false,
         }
     }
 
-    pub fn entail(&mut self, assertion: Assertion) -> anyhow::Result<()> {
+    pub fn entail(&mut self, assertion: &Assertion) {
+        self.entail_core(None, assertion);
+    }
+
+    fn entail_core(
+        &mut self,
+        mut substitutions: Option<&mut HashMap<SmolStr, TypeIdx>>,
+        assertion: &Assertion,
+    ) -> bool {
         let instances = self
             .context
             .environment
             .instances
             .get(&assertion.name)
             .cloned()
-            .context(format!("No instances for {:?}", &assertion.name))?;
+            .context(format!("No instance found! {}", assertion.name))
+            .unwrap();
 
         for instance in instances {
-            let mut substitutions = HashMap::new();
+            let mut local_substitutions = HashMap::new();
 
-            let instance_arguments = &instance.assertion.arguments;
-            let assertion_arguments = &assertion.arguments;
+            let substitutions = match &mut substitutions {
+                Some(substitutions) => substitutions,
+                None => &mut local_substitutions,
+            };
 
-            let arguments_match = zip(instance_arguments, assertion_arguments).all(
+            let assertion_entails = zip(&instance.assertion.arguments, &assertion.arguments).all(
                 |(instance_argument, assertion_argument)| {
-                    self.match_argument(&mut substitutions, *instance_argument, *assertion_argument)
+                    self.match_argument(substitutions, *instance_argument, *assertion_argument)
                 },
             );
 
-            if arguments_match {
-                break;
+            if !assertion_entails {
+                continue;
+            }
+
+            let dependencies_entail = instance
+                .dependencies
+                .iter()
+                .all(|dependency| self.entail_core(Some(substitutions), dependency));
+
+            if dependencies_entail {
+                return true;
             }
         }
 
-        Ok(())
+        false
     }
 }
-
-// Entailment may require dependencies to be solved too
-//
-// Entailment of an instance may require entailment of further dependencies.
-//
-// We can either defer them out into the constraint solver loop by emitting
-// more `Entail` constraints, or solve them here as usual.
-//
-// The problem with deferring them is that dependencies require an environment
-// to be passed. In particular, the substitution map for type variables that
-// appear in instance heads.
-//
-// On the other hand, doing everything locally requires some degree of recursion
-// which should be fine for simple cases, but would require some safeguards in
-// case of recursive cases.
-
-
-// struct EntailOne<'context> {
-//     context: &'context mut crate::context::Context,
-//     substitutions: HashMap<SmolStr, TypeIdx>,
-// }
-
-// impl<'context> EntailOne<'context> {
-//     pub fn new(context: &'context mut crate::context::Context) -> Self {
-//         Self { context, substitutions: HashMap::new() }
-//     }
-
-//     fn entail_one(&mut self, instance: , assertion: Assertion)
-// }
