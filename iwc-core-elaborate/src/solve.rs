@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
-use iwc_core_ast::ty::TypeIdx;
+use iwc_core_ast::ty::{Assertion, Instance, TypeIdx};
 use iwc_core_constraint::Constraint;
 use iwc_core_error::UnifyError;
+use smol_str::SmolStr;
 
 use crate::{
     context::Context,
-    entail::{Entail, EntailResult},
+    entail::{Entail, EntailResult, Evidence},
     unify::Unify,
 };
 
@@ -15,6 +16,10 @@ pub struct Solve<'context> {
     pub(crate) unification_solved: HashMap<usize, TypeIdx>,
     pub(crate) unification_deferred: Vec<(usize, usize)>,
     pub(crate) unification_errors: Vec<UnifyError>,
+    pub(crate) entailment_evidence: HashMap<usize, Evidence>,
+    pub(crate) entailment_instance: HashMap<usize, Instance>,
+    pub(crate) entailment_substitution: HashMap<usize, HashMap<SmolStr, TypeIdx>>,
+    pub(crate) entailment_deferred: Vec<(usize, Assertion)>,
 }
 
 impl<'context> Solve<'context> {
@@ -24,34 +29,53 @@ impl<'context> Solve<'context> {
             unification_solved: HashMap::new(),
             unification_deferred: Vec::new(),
             unification_errors: Vec::new(),
+            entailment_evidence: HashMap::new(),
+            entailment_deferred: Vec::new(),
+            entailment_substitution: HashMap::new(),
+            entailment_instance: HashMap::new(),
         }
-    }
-
-    pub fn as_unify<'solve>(&'solve mut self) -> Unify<'solve> {
-        Unify::new(self.context)
-    }
-
-    pub fn as_entail(&mut self) -> Entail {
-        Entail::new(self.context)
     }
 
     pub(crate) fn step(&mut self) {
         while let Ok(constraint) = self.context.constraints.pop() {
             match constraint {
-                Constraint::ClassEntail(_, assertion) => match self.as_entail().entail(assertion) {
-                    EntailResult::Solved { evidence: _ } => todo!("Solved!"),
-                    EntailResult::Depends {
-                        evidence: _,
-                        substitutions: _,
-                    } => todo!("Dependent!"),
-                    EntailResult::Deferred => todo!("Deferred!"),
-                },
+                Constraint::ClassEntail(index, assertion) => {
+                    // TODO: use substitutions.
+
+                    let result = match self.entailment_instance.get(&index) {
+                        Some(instance) => {
+                            // NOTE: we only need to mutably borrow the context.
+                            Entail::new(self.context)
+                                .entail_with(&assertion, instance)
+                                .unwrap_or(EntailResult::Deferred)
+                        }
+                        None => Entail::new(self.context).entail(&assertion),
+                    };
+
+                    match result {
+                        EntailResult::Solved { evidence } => {
+                            self.entailment_evidence.insert(index, evidence);
+                        }
+                        EntailResult::Depends {
+                            evidence,
+                            instance,
+                            substitution,
+                        } => {
+                            self.entailment_evidence.insert(index, evidence);
+                            self.entailment_instance.insert(index, instance);
+                            self.entailment_substitution.insert(index, substitution);
+                        }
+                        EntailResult::Deferred => {
+                            self.entailment_deferred.push((index, assertion));
+                        }
+                    }
+                }
                 Constraint::UnifyDeep(t_name, u_name) => {
                     let t_idx = self.unification_solved.get(&t_name).copied();
                     let u_idx = self.unification_solved.get(&u_name).copied();
                     match (t_idx, u_idx) {
                         (Some(t_idx), Some(u_idx)) => {
-                            self.as_unify().unify(t_idx, u_idx);
+                            Unify::new(self.context).unify(t_idx, u_idx);
                         }
                         (None, Some(u_idx)) => {
                             self.unification_solved.insert(t_name, u_idx);

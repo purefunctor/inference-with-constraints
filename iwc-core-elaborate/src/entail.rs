@@ -27,7 +27,8 @@ pub enum EntailResult {
     },
     Depends {
         evidence: Evidence,
-        substitutions: HashMap<SmolStr, TypeIdx>,
+        instance: Instance,
+        substitution: HashMap<SmolStr, TypeIdx>,
     },
     Deferred,
 }
@@ -142,50 +143,50 @@ impl<'context> Entail<'context> {
         }
     }
 
-    pub fn entail(&mut self, assertion: Assertion) -> EntailResult {
-        // CURRENT PROBLEMS:
-        //
-        // When solving dependencies, substitutions may be created, which should
-        // be backlinked to the original assertion being solved. For instance, if
-        // `zs` in an assertion A gets solved in its dependency B, when A gets
-        // resumed, it should be aware of `zs`.
-        //
-        // When entailing a deferred assertion after solving the dependencies, we
-        // should not do an instance search in which we try to loop over the instances
-        // again. Rather, the instance to resume with should be carried over.
+    pub fn entail(&mut self, assertion: &Assertion) -> EntailResult {
         let instances = self.context.environment.find_instances(&assertion.name);
 
         for instance in &instances {
-            if let Some(InstanceMatch {
-                dependencies,
-                substitutions,
-            }) = self.try_instance(instance, &assertion)
-            {
-                let evidences: Vec<_> = dependencies
-                    .into_iter()
-                    .map(|dependency| {
-                        let index = self.context.fresh_index();
-                        self.context
-                            .constraints
-                            .push(Constraint::ClassEntail(index, dependency))
-                            .unwrap();
-                        Evidence::Variable(index)
-                    })
-                    .collect();
-
-                if evidences.is_empty() {
-                    return EntailResult::Solved {
-                        evidence: Evidence::Dictionary(evidences),
-                    };
-                } else {
-                    return EntailResult::Depends {
-                        evidence: Evidence::Dictionary(evidences),
-                        substitutions,
-                    };
-                }
+            if let Some(result) = self.entail_with(&assertion, instance) {
+                return result;
             }
         }
 
         EntailResult::Deferred
+    }
+
+    pub fn entail_with(
+        &mut self,
+        assertion: &Assertion,
+        instance: &Instance,
+    ) -> Option<EntailResult> {
+        let InstanceMatch {
+            dependencies,
+            substitutions,
+        } = self.try_instance(instance, assertion)?;
+
+        let dependencies: Vec<_> = dependencies
+            .into_iter()
+            .map(|dependency| {
+                let index = self.context.fresh_index();
+                self.context
+                    .constraints
+                    .push(Constraint::ClassEntail(index, dependency))
+                    .unwrap();
+                Evidence::Variable(index)
+            })
+            .collect();
+
+        if dependencies.is_empty() {
+            Some(EntailResult::Solved {
+                evidence: Evidence::Dictionary(dependencies),
+            })
+        } else {
+            Some(EntailResult::Depends {
+                evidence: Evidence::Dictionary(dependencies),
+                instance: instance.clone(),
+                substitution: substitutions,
+            })
+        }
     }
 }
