@@ -7,73 +7,47 @@ pub mod unify;
 
 #[cfg(test)]
 mod tests {
-    // #[test]
-    // fn entailment_implementation() {
-    //     let ref mut context = Context::default();
+    use iwc_core_ast::ty::{Assertion, Instance, Type};
+    use iwc_core_constraint::Constraint;
 
-    //     let int = context
-    //         .volatile
-    //         .type_arena
-    //         .allocate(Type::Constructor { name: "Int".into() });
+    use crate::{context::Context, solve::Solve};
 
-    //     let a = context.volatile.type_arena.allocate(Type::Variable {
-    //         name: "a".into(),
-    //         rank: 0,
-    //     });
+    #[test]
+    fn entailment_concrete() {
+        let context = &mut Context::default();
 
-    //     let array = context.volatile.type_arena.allocate(Type::Constructor {
-    //         name: "Array".into(),
-    //     });
+        let int = context
+            .volatile
+            .type_arena
+            .allocate(Type::Constructor { name: "Int".into() });
 
-    //     let array_a = context.volatile.type_arena.allocate(Type::Application {
-    //         function: array,
-    //         argument: a,
-    //     });
+        context.environment.instances.insert(
+            "Eq".into(),
+            vec![Instance {
+                assertion: Assertion {
+                    name: "Eq".into(),
+                    arguments: vec![int],
+                },
+                dependencies: vec![],
+            }],
+        );
 
-    //     let array_int = context.volatile.type_arena.allocate(Type::Application {
-    //         function: array,
-    //         argument: int,
-    //     });
+        let index = context.fresh_index();
+        context
+            .constraints
+            .push(Constraint::ClassEntail(
+                index,
+                Assertion {
+                    name: "Eq".into(),
+                    arguments: vec![int],
+                },
+            ))
+            .unwrap();
 
-    //     context.environment.instances.insert(
-    //         "Eq".into(),
-    //         vec![
-    //             Instance {
-    //                 assertion: Assertion {
-    //                     name: "Eq".into(),
-    //                     arguments: vec![int],
-    //                 },
-    //                 dependencies: vec![],
-    //             },
-    //             Instance {
-    //                 assertion: Assertion {
-    //                     name: "Eq".into(),
-    //                     arguments: vec![array_a],
-    //                 },
-    //                 dependencies: vec![Assertion {
-    //                     name: "Eq".into(),
-    //                     arguments: vec![a],
-    //                 }],
-    //             },
-    //         ],
-    //     );
+        let mut solve = Solve::new(context);
 
-    //     // entail([Int])
-    //     context
-    //         .constraints
-    //         .push(Constraint::ClassEntail(Assertion {
-    //             name: "Eq".into(),
-    //             arguments: vec![int],
-    //         }))
-    //         .unwrap();
+        solve.step();
 
-    //     let mut entail = Entail::new(context);
-
-    //     let assertion = Assertion {
-    //         name: "Eq".into(),
-    //         arguments: vec![array_int],
-    //     };
-
-    //     entail.entail(&assertion);
-    // }
+        dbg!(solve.entailment_evidence);
+    }
 }

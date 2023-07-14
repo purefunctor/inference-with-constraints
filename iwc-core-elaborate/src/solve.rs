@@ -40,7 +40,7 @@ impl<'context> Solve<'context> {
         while let Ok(constraint) = self.context.constraints.pop() {
             match constraint {
                 Constraint::ClassEntail(index, assertion) => {
-                    // TODO: use substitutions.
+                    // TODO: apply the substitution and solve unification variables
 
                     let result = match self.entailment_instance.get(&index) {
                         Some(instance) => {
