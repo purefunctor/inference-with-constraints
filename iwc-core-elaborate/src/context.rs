@@ -13,8 +13,13 @@ use smol_str::SmolStr;
 pub struct Environment {
     pub(crate) constructors: HashMap<SmolStr, TypeIdx>,
     pub(crate) values: HashMap<SmolStr, TypeIdx>,
-    #[allow(dead_code)]
     pub(crate) instances: HashMap<SmolStr, Vec<Instance>>,
+}
+
+impl Environment {
+    pub fn find_instances(&self, name: &str) -> Vec<Instance> {
+        self.instances.get(name).cloned().unwrap_or(vec![])
+    }
 }
 
 #[derive(Default)]
@@ -31,6 +36,12 @@ pub struct Context {
 }
 
 impl Context {
+    pub fn fresh_index(&mut self) -> usize {
+        let index = self.fresh;
+        self.fresh += 1;
+        index
+    }
+
     pub fn fresh_unification(&mut self) -> TypeIdx {
         let name = self.fresh;
         self.fresh += 1;

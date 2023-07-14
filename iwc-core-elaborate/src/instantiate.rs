@@ -58,9 +58,10 @@ impl<'context> Instantiate<'context> {
     }
 
     fn emit_entail(&mut self, assertion: Assertion) {
+        let index = self.context.fresh_index();
         self.context
             .constraints
-            .push(Constraint::ClassEntail(assertion))
+            .push(Constraint::ClassEntail(index, assertion))
             .unwrap()
     }
 }

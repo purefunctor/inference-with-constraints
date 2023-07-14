@@ -1,80 +1,191 @@
+use std::{collections::HashMap, iter::zip};
+
+use iwc_core_ast::ty::{Assertion, Instance, Type, TypeIdx};
+use iwc_core_constraint::Constraint;
+use smol_str::SmolStr;
+
 pub struct Entail<'context> {
     context: &'context mut crate::context::Context,
+}
+
+#[derive(Debug)]
+struct InstanceMatch {
+    dependencies: Vec<Assertion>,
+    substitutions: HashMap<SmolStr, TypeIdx>,
+}
+
+#[derive(Debug)]
+pub enum Evidence {
+    Dictionary(Vec<Evidence>),
+    Variable(usize),
+}
+
+#[derive(Debug)]
+pub enum EntailResult {
+    Solved {
+        evidence: Evidence,
+    },
+    Depends {
+        evidence: Evidence,
+        substitutions: HashMap<SmolStr, TypeIdx>,
+    },
+    Deferred,
 }
 
 impl<'context> Entail<'context> {
     pub fn new(context: &'context mut crate::context::Context) -> Self {
         Self { context }
     }
+
+    fn match_argument(
+        &mut self,
+        substitutions: &mut HashMap<SmolStr, TypeIdx>,
+        t_idx: TypeIdx,
+        u_idx: TypeIdx,
+    ) -> bool {
+        match (
+            &self.context.volatile.type_arena[t_idx],
+            &self.context.volatile.type_arena[u_idx],
+        ) {
+            (Type::Constructor { name: t_name }, Type::Constructor { name: u_name }) => {
+                t_name == u_name
+            }
+            (
+                Type::Variable {
+                    name: t_name,
+                    rank: t_rank,
+                },
+                Type::Variable {
+                    name: u_name,
+                    rank: u_rank,
+                },
+            ) => (t_name, t_rank) == (u_name, u_rank),
+            (Type::Unification { name: t_name }, Type::Unification { name: u_name }) => {
+                t_name == u_name
+            }
+            (
+                Type::Function {
+                    arguments: t_arguments,
+                    result: t_result,
+                },
+                Type::Function {
+                    arguments: u_arguments,
+                    result: u_result,
+                },
+            ) => {
+                let t_arguments = t_arguments.clone();
+                let u_arguments = u_arguments.clone();
+
+                let t_result = *t_result;
+                let u_result = *u_result;
+
+                zip(t_arguments, u_arguments).all(|(t_argument, u_argument)| {
+                    self.match_argument(substitutions, t_argument, u_argument)
+                }) && self.match_argument(substitutions, t_result, u_result)
+            }
+            (
+                Type::Application {
+                    function: t_function,
+                    argument: t_argument,
+                },
+                Type::Application {
+                    function: u_function,
+                    argument: u_argument,
+                },
+            ) => {
+                let t_function = *t_function;
+                let t_argument = *t_argument;
+
+                let u_function = *u_function;
+                let u_argument = *u_argument;
+
+                self.match_argument(substitutions, t_function, u_function)
+                    && self.match_argument(substitutions, t_argument, u_argument)
+            }
+            (Type::Variable { name, .. }, _) => match substitutions.get(name) {
+                Some(t_idx) => self.match_argument(substitutions, *t_idx, u_idx),
+                None => {
+                    substitutions.insert(name.clone(), u_idx);
+                    true
+                }
+            },
+            _ => false,
+        }
+    }
+
+    fn try_instance(
+        &mut self,
+        instance: &Instance,
+        assertion: &Assertion,
+    ) -> Option<InstanceMatch> {
+        let mut substitutions = HashMap::new();
+
+        let instance_arguments = &instance.assertion.arguments;
+        let assertion_arguments = &assertion.arguments;
+
+        let arguments_match = zip(
+            instance_arguments.iter().copied(),
+            assertion_arguments.iter().copied(),
+        )
+        .all(|(instance_argument, assertion_argument)| {
+            self.match_argument(&mut substitutions, instance_argument, assertion_argument)
+        });
+
+        if arguments_match {
+            let dependencies = instance.dependencies.clone();
+            Some(InstanceMatch {
+                dependencies,
+                substitutions,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn entail(&mut self, assertion: Assertion) -> EntailResult {
+        // CURRENT PROBLEMS:
+        //
+        // When solving dependencies, substitutions may be created, which should
+        // be backlinked to the original assertion being solved. For instance, if
+        // `zs` in an assertion A gets solved in its dependency B, when A gets
+        // resumed, it should be aware of `zs`.
+        //
+        // When entailing a deferred assertion after solving the dependencies, we
+        // should not do an instance search in which we try to loop over the instances
+        // again. Rather, the instance to resume with should be carried over.
+        let instances = self.context.environment.find_instances(&assertion.name);
+
+        for instance in &instances {
+            if let Some(InstanceMatch {
+                dependencies,
+                substitutions,
+            }) = self.try_instance(instance, &assertion)
+            {
+                let evidences: Vec<_> = dependencies
+                    .into_iter()
+                    .map(|dependency| {
+                        let index = self.context.fresh_index();
+                        self.context
+                            .constraints
+                            .push(Constraint::ClassEntail(index, dependency))
+                            .unwrap();
+                        Evidence::Variable(index)
+                    })
+                    .collect();
+
+                if evidences.is_empty() {
+                    return EntailResult::Solved {
+                        evidence: Evidence::Dictionary(evidences),
+                    };
+                } else {
+                    return EntailResult::Depends {
+                        evidence: Evidence::Dictionary(evidences),
+                        substitutions,
+                    };
+                }
+            }
+        }
+
+        EntailResult::Deferred
+    }
 }
-
-/*
-
-A new entailment algorithm:
-
-The `ClassEntail` constraint attempts to solve a given assertion with local
-and global instances. This is where we start to branch off a bit:
-
-Given the local and global instances:
-
-If there exists a match, and no other dependencies are needed, then we
-consider this assertion to be solved. If there are other dependencies to
-be solved, then we consider the assertion to be deferred, and schedule
-the dependencies to be solved as a `ClassEntail` constraint.
-
-If no match exists, we defer the assertion and consider it failing. If
-an instance gets added through some other constraint, we can schedule
-the deferred assertion to be queued again.
-
-Given the nuances of other features in the language, what constitutes
-as an instance "match" may vary. At least within the realm of functional
-dependencies, we consider the following algorithm:
-
-For each local and global instance, perform a unification of the assertion
-and instance arguments. Arguments appearing in the domain of a functional
-dependency _must_ solve to a concrete type. If not, we defer the constraint
-until this is solved. Arguments appearing in the codomain of a functional
-do not have this restriction.
-
-On the topic of matching instance heads, the act of matching each argument
-can either be done by using the core unification routine, or a custom one
-that returns substitutions inline. The challenge with the former though
-is non-linearity. Given the following instance:
-
-```hs
-instance appendNil :: Append Nil ys ys
-```
-
-To start, the free variables would need to be instantiated, just like so:
-
-```hs
-Append Nil ?ys ?ys
-```
-
-When matching with an assertion, such as the following:
-
-```hs
-Append Nil (Cons 0 Nil) ?zs
-```
-
-We can see constraints go something along the lines of:
-
-```hs
-ClassEntail(Append Nil (Cons 0 Nil) ?zs)
-
-?ys ~ (Cons 0 Nil)
-?ys ~ ?zs
-
-ClassEntail(Append Nil (Cons 0 Nil) ?zs)
-```
-
-The problem for this approach is that once the second `ClassEntail` constraint
-needs to be solved, we need to restore information before resumption. Specifically,
-which instance was being matched against, and the instantiated version of the instance.
-
-Here's what we could do though, each assertion being entailed should associate with
-a unique index that is then used as the key for storing information between non-linear
-calls to entail. We can use this index to store information such as the instances being
-tried and the substitutions for each instance.
-
-*/

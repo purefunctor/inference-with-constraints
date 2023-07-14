@@ -4,7 +4,11 @@ use iwc_core_ast::ty::TypeIdx;
 use iwc_core_constraint::Constraint;
 use iwc_core_error::UnifyError;
 
-use crate::{context::Context, unify::Unify};
+use crate::{
+    context::Context,
+    entail::{Entail, EntailResult},
+    unify::Unify,
+};
 
 pub struct Solve<'context> {
     pub(crate) context: &'context mut Context,
@@ -27,10 +31,21 @@ impl<'context> Solve<'context> {
         Unify::new(self.context)
     }
 
+    pub fn as_entail(&mut self) -> Entail {
+        Entail::new(self.context)
+    }
+
     pub(crate) fn step(&mut self) {
         while let Ok(constraint) = self.context.constraints.pop() {
             match constraint {
-                Constraint::ClassEntail(_) => todo!(),
+                Constraint::ClassEntail(_, assertion) => match self.as_entail().entail(assertion) {
+                    EntailResult::Solved { evidence: _ } => todo!("Solved!"),
+                    EntailResult::Depends {
+                        evidence: _,
+                        substitutions: _,
+                    } => todo!("Dependent!"),
+                    EntailResult::Deferred => todo!("Deferred!"),
+                },
                 Constraint::UnifyDeep(t_name, u_name) => {
                     let t_idx = self.unification_solved.get(&t_name).copied();
                     let u_idx = self.unification_solved.get(&u_name).copied();
