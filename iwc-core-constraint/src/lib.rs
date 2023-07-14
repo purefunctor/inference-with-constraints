@@ -4,7 +4,6 @@ use iwc_core_error::UnifyError;
 #[derive(Debug)]
 pub enum Constraint {
     ClassEntail(Assertion),
-    ClassEvidence(Assertion),
     UnifyDeep(usize, usize),
     UnifySolve(usize, TypeIdx),
     UnifyError(UnifyError),

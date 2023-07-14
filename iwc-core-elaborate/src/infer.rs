@@ -5,11 +5,7 @@ use iwc_core_ast::{
 };
 use smol_str::SmolStr;
 
-use crate::{
-    instantiate::{Instantiate, InstantiateMode},
-    solve::Solve,
-    unify::Unify,
-};
+use crate::{instantiate::Instantiate, solve::Solve, unify::Unify};
 
 pub struct Infer<'context> {
     context: &'context mut crate::context::Context,
@@ -56,9 +52,7 @@ impl<'context> Infer<'context> {
                 let arguments = arguments.clone();
 
                 let function = self.infer(function)?;
-                let function = self
-                    .as_instantiate()
-                    .instantiate(function, InstantiateMode::Entail);
+                let function = self.as_instantiate().instantiate(function);
 
                 let arguments: Vec<TypeIdx> = arguments
                     .into_iter()

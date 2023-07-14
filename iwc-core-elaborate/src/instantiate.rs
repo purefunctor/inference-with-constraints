@@ -10,11 +10,6 @@ use smol_str::SmolStr;
 
 use crate::context::Context;
 
-pub enum InstantiateMode {
-    Entail,
-    Evidence,
-}
-
 pub struct Instantiate<'context> {
     context: &'context mut Context,
 }
@@ -28,7 +23,7 @@ impl<'context> Instantiate<'context> {
         Substitute::new(self.context, variables, rank)
     }
 
-    pub fn instantiate(&mut self, t_idx: TypeIdx, mode: InstantiateMode) -> TypeIdx {
+    pub fn instantiate(&mut self, t_idx: TypeIdx) -> TypeIdx {
         if let Type::Forall {
             variables,
             rank,
@@ -50,14 +45,7 @@ impl<'context> Instantiate<'context> {
                 let ty_idx = substitute.traverse_ty(ty_idx);
 
                 for assertion in assertions {
-                    match mode {
-                        InstantiateMode::Entail => {
-                            self.emit_entail(assertion);
-                        }
-                        InstantiateMode::Evidence => {
-                            self.emit_evidence(assertion);
-                        }
-                    }
+                    self.emit_entail(assertion);
                 }
 
                 ty_idx
@@ -73,13 +61,6 @@ impl<'context> Instantiate<'context> {
         self.context
             .constraints
             .push(Constraint::ClassEntail(assertion))
-            .unwrap()
-    }
-
-    fn emit_evidence(&mut self, assertion: Assertion) {
-        self.context
-            .constraints
-            .push(Constraint::ClassEvidence(assertion))
             .unwrap()
     }
 }
