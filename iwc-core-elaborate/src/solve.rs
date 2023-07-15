@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use iwc_core_ast::ty::{Assertion, Instance, TypeIdx};
+use iwc_core_ast::ty::{Assertion, Instance, Type, TypeIdx};
 use iwc_core_constraint::Constraint;
 use iwc_core_error::UnifyError;
 use smol_str::SmolStr;
@@ -40,8 +40,6 @@ impl<'context> Solve<'context> {
         while let Ok(constraint) = self.context.constraints.pop() {
             match constraint {
                 Constraint::ClassEntail(index, assertion) => {
-                    // TODO: apply the substitution and solve unification variables
-
                     let result = match self.entailment_instance.get(&index) {
                         Some(instance) => {
                             // NOTE: we only need to mutably borrow the context.
@@ -111,6 +109,36 @@ impl<'context> Solve<'context> {
                 true
             }
         });
+
+        let entailment_deferred = std::mem::take(&mut self.entailment_deferred);
+        for (index, mut assertion) in entailment_deferred {
+            let context = &mut self.context;
+            let solution = &self.unification_solved;
+
+            let default_substitution = HashMap::new();
+            let substitution = self
+                .entailment_substitution
+                .get(&index)
+                .unwrap_or(&default_substitution);
+
+            let replaced = assertion.arguments.iter_mut().all(|argument| {
+                let (replaced, replacement) =
+                    normalize_argument(context, solution, substitution, *argument);
+
+                *argument = replacement;
+
+                replaced
+            });
+
+            if replaced {
+                self.context
+                    .constraints
+                    .push(Constraint::ClassEntail(index, assertion))
+                    .unwrap();
+            } else {
+                self.entailment_deferred.push((index, assertion));
+            }
+        }
     }
 
     pub fn solve(&mut self) {
@@ -120,5 +148,71 @@ impl<'context> Solve<'context> {
                 break;
             }
         }
+    }
+}
+
+fn normalize_argument(
+    context: &mut Context,
+    solution: &HashMap<usize, TypeIdx>,
+    substitution: &HashMap<SmolStr, TypeIdx>,
+    t_idx: TypeIdx,
+) -> (bool, TypeIdx) {
+    match &context.volatile.type_arena[t_idx] {
+        Type::Constructor { .. } => (true, t_idx),
+        Type::Variable { name, .. } => {
+            if let Some(argument) = substitution.get(name) {
+                (true, *argument)
+            } else {
+                (false, t_idx)
+            }
+        }
+        Type::Unification { name } => {
+            if let Some(argument) = solution.get(name) {
+                (true, *argument)
+            } else {
+                (false, t_idx)
+            }
+        }
+        Type::Function { arguments, result } => {
+            let arguments = arguments.clone();
+            let result = *result;
+
+            let (arguments_replaced, arguments): (Vec<_>, Vec<_>) = arguments
+                .iter()
+                .map(|argument| normalize_argument(context, solution, substitution, *argument))
+                .unzip();
+
+            let (result_replaced, result) =
+                normalize_argument(context, solution, substitution, result);
+
+            let replaced = arguments_replaced.into_iter().all(|x| x) && result_replaced;
+
+            (
+                replaced,
+                context
+                    .volatile
+                    .type_arena
+                    .allocate(Type::Function { arguments, result }),
+            )
+        }
+        Type::Application { function, argument } => {
+            let function = *function;
+            let argument = *argument;
+
+            let (function_replaced, function) =
+                normalize_argument(context, solution, substitution, function);
+            let (argument_replaced, argument) =
+                normalize_argument(context, solution, substitution, argument);
+
+            (
+                function_replaced && argument_replaced,
+                context
+                    .volatile
+                    .type_arena
+                    .allocate(Type::Application { function, argument }),
+            )
+        }
+        Type::Forall { .. } => panic!("Invalid type in assertion."),
+        Type::Constrained { .. } => panic!("Invalid type in assertion."),
     }
 }

@@ -119,9 +119,6 @@ impl<'context> Entail<'context> {
         instance: &Instance,
         assertion: &Assertion,
     ) -> Option<InstanceMatch> {
-        // TODO: reject if there exists unification variables in the assertion
-        // TODO: this is also subject to when we implement functional dependencies
-
         let mut substitutions = HashMap::new();
 
         let instance_arguments = &instance.assertion.arguments;
@@ -147,6 +144,12 @@ impl<'context> Entail<'context> {
     }
 
     pub fn entail(&mut self, assertion: &Assertion) -> EntailResult {
+        for argument in &assertion.arguments {
+            if let Type::Unification { .. } = self.context.volatile.type_arena[*argument] {
+                return EntailResult::Deferred;
+            }
+        }
+
         let instances = self.context.environment.find_instances(&assertion.name);
 
         for instance in &instances {
