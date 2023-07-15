@@ -121,16 +121,16 @@ impl<'context> Solve<'context> {
                 .get(&index)
                 .unwrap_or(&default_substitution);
 
-            let replaced = assertion.arguments.iter_mut().all(|argument| {
-                let (replaced, replacement) =
+            let normalized = assertion.arguments.iter_mut().all(|argument| {
+                let (normalized, replacement) =
                     normalize_argument(context, solution, substitution, *argument);
 
                 *argument = replacement;
 
-                replaced
+                normalized
             });
 
-            if replaced {
+            if normalized {
                 self.context
                     .constraints
                     .push(Constraint::ClassEntail(index, assertion))
@@ -177,18 +177,16 @@ fn normalize_argument(
             let arguments = arguments.clone();
             let result = *result;
 
-            let (arguments_replaced, arguments): (Vec<_>, Vec<_>) = arguments
+            let (arguments_normalized, arguments): (Vec<_>, Vec<_>) = arguments
                 .iter()
                 .map(|argument| normalize_argument(context, solution, substitution, *argument))
                 .unzip();
 
-            let (result_replaced, result) =
+            let (result_normalized, result) =
                 normalize_argument(context, solution, substitution, result);
 
-            let replaced = arguments_replaced.into_iter().all(|x| x) && result_replaced;
-
             (
-                replaced,
+                arguments_normalized.into_iter().all(|x| x) && result_normalized,
                 context
                     .volatile
                     .type_arena
@@ -199,13 +197,13 @@ fn normalize_argument(
             let function = *function;
             let argument = *argument;
 
-            let (function_replaced, function) =
+            let (function_normalized, function) =
                 normalize_argument(context, solution, substitution, function);
-            let (argument_replaced, argument) =
+            let (argument_normalized, argument) =
                 normalize_argument(context, solution, substitution, argument);
 
             (
-                function_replaced && argument_replaced,
+                function_normalized && argument_normalized,
                 context
                     .volatile
                     .type_arena
