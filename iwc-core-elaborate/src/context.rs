@@ -4,7 +4,7 @@ use concurrent_queue::ConcurrentQueue;
 use iwc_arena::Arena;
 use iwc_core_ast::{
     expr::Expr,
-    ty::{Instance, Type, TypeIdx},
+    ty::{Class, Instance, Type, TypeIdx},
 };
 use iwc_core_constraint::Constraint;
 use smol_str::SmolStr;
@@ -13,6 +13,7 @@ use smol_str::SmolStr;
 pub struct Environment {
     pub(crate) constructors: HashMap<SmolStr, TypeIdx>,
     pub(crate) values: HashMap<SmolStr, TypeIdx>,
+    pub(crate) classes: HashMap<SmolStr, Class>,
     pub(crate) instances: HashMap<SmolStr, Vec<Instance>>,
 }
 

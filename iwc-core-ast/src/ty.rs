@@ -62,3 +62,14 @@ pub struct Instance {
     pub assertion: Assertion,
     pub dependencies: Vec<Assertion>,
 }
+
+#[derive(Debug, Clone)]
+pub struct FunctionalDependency {
+    pub domain: Vec<usize>,
+    pub codomain: Vec<usize>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Class {
+    pub functional_dependencies: Vec<FunctionalDependency>,
+}

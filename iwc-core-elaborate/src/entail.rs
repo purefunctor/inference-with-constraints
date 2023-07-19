@@ -1,7 +1,13 @@
-use std::{collections::HashMap, iter::zip};
+use std::{
+    collections::{HashMap, HashSet},
+    iter::zip,
+};
 
-use iwc_core_ast::ty::{Assertion, Instance, Type, TypeIdx};
-use iwc_core_constraint::Constraint;
+use iwc_core_ast::ty::{
+    pretty::{pretty_print_assertions, pretty_print_ty},
+    traversal::{default_traverse_ty, Traversal},
+    Assertion, FunctionalDependency, Type, TypeIdx,
+};
 use smol_str::SmolStr;
 
 pub struct Entail<'context> {
@@ -9,28 +15,24 @@ pub struct Entail<'context> {
 }
 
 #[derive(Debug)]
-struct InstanceMatch {
-    dependencies: Vec<Assertion>,
-    substitutions: HashMap<SmolStr, TypeIdx>,
-}
-
-#[derive(Debug)]
 pub enum Evidence {
-    Dictionary(Vec<Evidence>),
-    Variable(usize),
+    Dictionary { dependencies: Vec<usize> },
 }
 
 #[derive(Debug)]
 pub enum EntailResult {
     Solved {
         evidence: Evidence,
+        instance_assertion: Assertion,
     },
     Depends {
         evidence: Evidence,
-        instance: Instance,
-        substitution: HashMap<SmolStr, TypeIdx>,
+        instance_assertion: Assertion,
+        instance_dependencies: Vec<(usize, Assertion)>,
     },
-    Deferred,
+    Deferred {
+        needs_solution: HashSet<(usize, usize)>,
+    },
 }
 
 impl<'context> Entail<'context> {
@@ -44,6 +46,11 @@ impl<'context> Entail<'context> {
         t_idx: TypeIdx,
         u_idx: TypeIdx,
     ) -> bool {
+        println!(
+            "match_argument: {} = {}",
+            pretty_print_ty(&self.context.volatile.type_arena, t_idx),
+            pretty_print_ty(&self.context.volatile.type_arena, u_idx)
+        );
         match (
             &self.context.volatile.type_arena[t_idx],
             &self.context.volatile.type_arena[u_idx],
@@ -110,89 +117,189 @@ impl<'context> Entail<'context> {
                     true
                 }
             },
+            (_, Type::Unification { .. }) => true,
             _ => false,
         }
     }
 
-    fn try_instance(
-        &mut self,
-        instance: &Instance,
-        assertion: &Assertion,
-    ) -> Option<InstanceMatch> {
-        let mut substitutions = HashMap::new();
+    fn needs_solution(&self, assertion: &Assertion) -> HashSet<(usize, usize)> {
+        let mut needs_solution = HashSet::new();
 
-        let instance_arguments = &instance.assertion.arguments;
-        let assertion_arguments = &assertion.arguments;
+        let class = self
+            .context
+            .environment
+            .classes
+            .get(&assertion.name)
+            .cloned()
+            .unwrap();
 
-        let arguments_match = zip(
-            instance_arguments.iter().copied(),
-            assertion_arguments.iter().copied(),
-        )
-        .all(|(instance_argument, assertion_argument)| {
-            self.match_argument(&mut substitutions, instance_argument, assertion_argument)
-        });
-
-        if arguments_match {
-            let dependencies = instance.dependencies.clone();
-            Some(InstanceMatch {
-                dependencies,
-                substitutions,
-            })
+        if class.functional_dependencies.is_empty() {
+            for (index, argument) in assertion.arguments.iter().copied().enumerate() {
+                if let Type::Unification { name } = &self.context.volatile.type_arena[argument] {
+                    needs_solution.insert((index, *name));
+                }
+            }
         } else {
-            None
+            for FunctionalDependency { domain, .. } in &class.functional_dependencies {
+                for argument_index in domain {
+                    let argument = assertion.arguments[*argument_index];
+                    if let Type::Unification { name } = &self.context.volatile.type_arena[argument]
+                    {
+                        needs_solution.insert((*argument_index, *name));
+                    }
+                }
+            }
         }
+
+        needs_solution
     }
 
     pub fn entail(&mut self, assertion: &Assertion) -> EntailResult {
-        for argument in &assertion.arguments {
-            if let Type::Unification { .. } = self.context.volatile.type_arena[*argument] {
-                return EntailResult::Deferred;
+        let needs_solution = self.needs_solution(assertion);
+        if !needs_solution.is_empty() {
+            return EntailResult::Deferred { needs_solution };
+        }
+
+        let instances = self
+            .context
+            .environment
+            .instances
+            .get(&assertion.name)
+            .cloned()
+            .unwrap();
+
+        for instance in instances {
+            println!("instance: {:?}", instance);
+
+            let mut substitutions = HashMap::new();
+
+            let instance_arguments = &instance.assertion.arguments;
+            let assertion_arguments = &assertion.arguments;
+
+            let arguments_match = zip(
+                instance_arguments.iter().copied(),
+                assertion_arguments.iter().copied(),
+            )
+            .all(|(instance_argument, assertion_argument)| {
+                self.match_argument(&mut substitutions, instance_argument, assertion_argument)
+            });
+
+            if !arguments_match {
+                continue;
+            }
+
+            let mut sgf = SubstituteGeneralizingFree::new(self.context, &mut substitutions);
+
+            if instance.dependencies.is_empty() {
+                let instance_assertion = sgf.on_assertion(&instance.assertion);
+
+                println!(
+                    "{}",
+                    pretty_print_assertions(
+                        &self.context.volatile.type_arena,
+                        &[instance_assertion.clone()],
+                    )
+                );
+
+                let needs_solution = self.needs_solution(assertion);
+                if !needs_solution.is_empty() {
+                    return EntailResult::Deferred { needs_solution };
+                }
+
+                let instance_evidence = Evidence::Dictionary {
+                    dependencies: vec![],
+                };
+
+                return EntailResult::Solved {
+                    evidence: instance_evidence,
+                    instance_assertion,
+                };
+            } else {
+                let instance_assertion = sgf.on_assertion(&instance.assertion);
+
+                println!(
+                    "after sgf: {}",
+                    pretty_print_assertions(
+                        &sgf.context.volatile.type_arena,
+                        &[instance_assertion.clone()],
+                    )
+                );
+
+                let mut instance_dependencies = vec![];
+                let mut dictionary_dependencies = vec![];
+                for dependency in &instance.dependencies {
+                    let index = sgf.context.fresh_index();
+                    let dependency = sgf.on_assertion(dependency);
+                    println!(
+                        "after sgf: {}",
+                        pretty_print_assertions(
+                            &sgf.context.volatile.type_arena,
+                            &[dependency.clone()],
+                        )
+                    );
+                    instance_dependencies.push((index, dependency));
+                    dictionary_dependencies.push(index);
+                }
+
+                let instance_evidence = Evidence::Dictionary {
+                    dependencies: dictionary_dependencies,
+                };
+
+                return EntailResult::Depends {
+                    evidence: instance_evidence,
+                    instance_assertion,
+                    instance_dependencies,
+                };
             }
         }
 
-        let instances = self.context.environment.find_instances(&assertion.name);
-
-        for instance in &instances {
-            if let Some(result) = self.entail_with(&assertion, instance) {
-                return result;
-            }
+        EntailResult::Deferred {
+            needs_solution: HashSet::new(),
         }
+    }
+}
 
-        EntailResult::Deferred
+struct SubstituteGeneralizingFree<'context> {
+    context: &'context mut crate::context::Context,
+    substitutions: &'context mut HashMap<SmolStr, TypeIdx>,
+}
+
+impl<'context> SubstituteGeneralizingFree<'context> {
+    fn new(
+        context: &'context mut crate::context::Context,
+        substitutions: &'context mut HashMap<SmolStr, TypeIdx>,
+    ) -> Self {
+        Self {
+            context,
+            substitutions,
+        }
     }
 
-    pub fn entail_with(
-        &mut self,
-        assertion: &Assertion,
-        instance: &Instance,
-    ) -> Option<EntailResult> {
-        let InstanceMatch {
-            dependencies,
-            substitutions,
-        } = self.try_instance(instance, assertion)?;
+    fn on_assertion(&mut self, assertion: &Assertion) -> Assertion {
+        let name = assertion.name.clone();
+        let mut arguments = assertion.arguments.clone();
 
-        let dependencies: Vec<_> = dependencies
-            .into_iter()
-            .map(|dependency| {
-                let index = self.context.fresh_index();
-                self.context
-                    .constraints
-                    .push(Constraint::ClassEntail(index, dependency))
-                    .unwrap();
-                Evidence::Variable(index)
-            })
-            .collect();
+        arguments.iter_mut().for_each(|argument| {
+            *argument = self.traverse_ty(*argument);
+        });
 
-        if dependencies.is_empty() {
-            Some(EntailResult::Solved {
-                evidence: Evidence::Dictionary(dependencies),
-            })
+        Assertion { name, arguments }
+    }
+}
+
+impl<'context> Traversal for SubstituteGeneralizingFree<'context> {
+    fn arena(&mut self) -> &mut iwc_arena::Arena<Type> {
+        &mut self.context.volatile.type_arena
+    }
+
+    fn traverse_ty(&mut self, ty_idx: TypeIdx) -> TypeIdx {
+        if let Type::Variable { name, .. } = &self.context.volatile.type_arena[ty_idx] {
+            *self
+                .substitutions
+                .entry(name.clone())
+                .or_insert_with(|| self.context.fresh_unification())
         } else {
-            Some(EntailResult::Depends {
-                evidence: Evidence::Dictionary(dependencies),
-                instance: instance.clone(),
-                substitution: substitutions,
-            })
+            default_traverse_ty(self, ty_idx)
         }
     }
 }
