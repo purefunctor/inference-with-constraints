@@ -96,21 +96,23 @@ impl<'context> Unify<'context> {
             (
                 Type::Application {
                     function: t_function,
-                    argument: t_argument,
+                    arguments: t_arguments,
                 },
                 Type::Application {
                     function: u_function,
-                    argument: u_argument,
+                    arguments: u_arguments,
                 },
             ) => {
                 let t_function = *t_function;
                 let u_function = *u_function;
 
-                let t_argument = *t_argument;
-                let u_argument = *u_argument;
+                let t_arguments = t_arguments.clone();
+                let u_arguments = u_arguments.clone();
 
                 self.unify(t_function, u_function);
-                self.unify(t_argument, u_argument);
+                for (t_argument, u_argument) in zip(t_arguments, u_arguments) {
+                    self.unify(t_argument, u_argument);
+                }
             }
             (_, _) => {
                 self.emit_error(UnifyError::CannotUnify(t_idx, u_idx));
@@ -129,8 +131,14 @@ impl<'context> Unify<'context> {
                     .any(|argument| self.occurs_check(*argument, u_name))
                     || self.occurs_check(*result, u_name)
             }
-            Type::Application { function, argument } => {
-                self.occurs_check(*function, u_name) || self.occurs_check(*argument, u_name)
+            Type::Application {
+                function,
+                arguments,
+            } => {
+                self.occurs_check(*function, u_name)
+                    || arguments
+                        .iter()
+                        .any(|argument| self.occurs_check(*argument, u_name))
             }
             Type::Forall { ty, .. } => self.occurs_check(*ty, u_name),
             Type::Constrained { assertions, ty } => {

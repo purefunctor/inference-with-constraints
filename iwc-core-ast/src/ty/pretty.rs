@@ -24,11 +24,18 @@ pub fn pretty_print_ty(type_arena: &Arena<Type>, ty_idx: TypeIdx) -> String {
             write!(accumulator, "{}", pretty_print_ty(type_arena, *result)).unwrap();
             accumulator
         }
-        Type::Application { function, argument } => format!(
-            "({} {})",
-            pretty_print_ty(type_arena, *function),
-            pretty_print_ty(type_arena, *argument),
-        ),
+        Type::Application {
+            function,
+            arguments,
+        } => {
+            let mut result = String::new();
+            write!(result, "({}", pretty_print_ty(type_arena, *function)).unwrap();
+            for argument in arguments {
+                write!(result, " {}", pretty_print_ty(type_arena, *argument)).unwrap();
+            }
+            write!(result, ")").unwrap();
+            result
+        }
         Type::Forall {
             variables,
             rank,

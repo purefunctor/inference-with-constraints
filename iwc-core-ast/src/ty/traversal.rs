@@ -32,16 +32,22 @@ pub fn default_traverse_ty<T: Traversal>(traversal: &mut T, ty_idx: TypeIdx) -> 
                 .arena()
                 .allocate(Type::Function { arguments, result })
         }
-        Type::Application { function, argument } => {
+        Type::Application {
+            function,
+            arguments,
+        } => {
             let function = *function;
-            let argument = *argument;
+            let mut arguments = arguments.clone();
 
             let function = traversal.traverse_ty(function);
-            let argument = traversal.traverse_ty(argument);
+            for argument in &mut arguments {
+                *argument = traversal.traverse_ty(*argument);
+            }
 
-            traversal
-                .arena()
-                .allocate(Type::Application { function, argument })
+            traversal.arena().allocate(Type::Application {
+                function,
+                arguments,
+            })
         }
         Type::Forall {
             variables,

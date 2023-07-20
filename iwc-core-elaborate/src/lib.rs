@@ -152,7 +152,7 @@ mod tests {
 
         let array_a = context.volatile.type_arena.allocate(Type::Application {
             function: array,
-            argument: a,
+            arguments: vec![a],
         });
 
         context.environment.instances.insert(
@@ -180,7 +180,7 @@ mod tests {
 
         let array_int = context.volatile.type_arena.allocate(Type::Application {
             function: array,
-            argument: int,
+            arguments: vec![int],
         });
 
         let index = context.fresh_index();
@@ -251,17 +251,13 @@ mod tests {
                 name: "zs".into(),
                 rank: 0,
             });
-            let cons_x = context.volatile.type_arena.allocate(Type::Application {
-                function: cons,
-                argument: x,
-            });
             let cons_x_xs = context.volatile.type_arena.allocate(Type::Application {
-                function: cons_x,
-                argument: xs,
+                function: cons,
+                arguments: vec![x, xs],
             });
             let cons_x_zs = context.volatile.type_arena.allocate(Type::Application {
-                function: cons_x,
-                argument: zs,
+                function: cons,
+                arguments: vec![x, zs],
             });
             context.environment.instances.insert(
                 "Append".into(),
@@ -289,27 +285,15 @@ mod tests {
 
         let u = context.fresh_unification();
 
-        let cons_0_nil = {
-            let cons_0 = context.volatile.type_arena.allocate(Type::Application {
-                function: cons,
-                argument: zero,
-            });
-            context.volatile.type_arena.allocate(Type::Application {
-                function: cons_0,
-                argument: nil,
-            })
-        };
+        let cons_0_nil = context.volatile.type_arena.allocate(Type::Application {
+            function: cons,
+            arguments: vec![zero, nil],
+        });
 
-        let cons_1_nil = {
-            let cons_1 = context.volatile.type_arena.allocate(Type::Application {
-                function: cons,
-                argument: one,
-            });
-            context.volatile.type_arena.allocate(Type::Application {
-                function: cons_1,
-                argument: nil,
-            })
-        };
+        let cons_1_nil = context.volatile.type_arena.allocate(Type::Application {
+            function: cons,
+            arguments: vec![one, nil],
+        });
 
         let index = context.fresh_index();
         context
@@ -339,7 +323,7 @@ mod tests {
                 }]
             )
         );
-        
+
         for (u, t_idx) in &solve.unification_solved {
             println!(
                 "?{} ~ {}",

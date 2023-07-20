@@ -94,21 +94,23 @@ impl<'context> Entail<'context> {
             (
                 Type::Application {
                     function: t_function,
-                    argument: t_argument,
+                    arguments: t_arguments,
                 },
                 Type::Application {
                     function: u_function,
-                    argument: u_argument,
+                    arguments: u_arguments,
                 },
             ) => {
                 let t_function = *t_function;
-                let t_argument = *t_argument;
+                let t_arguments = t_arguments.clone();
 
                 let u_function = *u_function;
-                let u_argument = *u_argument;
+                let u_arguments = u_arguments.clone();
 
                 self.match_argument(substitutions, t_function, u_function)
-                    && self.match_argument(substitutions, t_argument, u_argument)
+                    && zip(t_arguments, u_arguments).all(|(t_argument, u_argument)| {
+                        self.match_argument(substitutions, t_argument, u_argument)
+                    })
             }
             (Type::Variable { name, .. }, _) => match substitutions.get(name) {
                 Some(t_idx) => self.match_argument(substitutions, *t_idx, u_idx),

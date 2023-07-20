@@ -37,7 +37,7 @@ pub enum Type {
     },
     Application {
         function: TypeIdx,
-        argument: TypeIdx,
+        arguments: Vec<TypeIdx>,
     },
     Forall {
         variables: Vec<TypeVariableBinder>,
