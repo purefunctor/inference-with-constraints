@@ -6,5 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+im = "15.1.0"
 iwc-arena = { version = "0.1.0", path = "../iwc-arena" }
 smol_str = "0.2.0"

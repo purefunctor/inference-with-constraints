@@ -50,35 +50,37 @@ pub fn pretty_print_ty(type_arena: &Arena<Type>, ty_idx: TypeIdx) -> String {
             result
         }
         Type::Constrained { assertions, ty } => {
-            format!(
-                "{} => {}",
-                pretty_print_assertions(type_arena, assertions),
-                pretty_print_ty(type_arena, *ty)
-            )
+            let mut result = String::new();
+
+            let mut assertions = assertions.iter().peekable();
+
+            write!(result, "(").unwrap();
+            while let Some(assertion) = assertions.next() {
+                write!(result, "{}", pretty_print_assertion(type_arena, assertion)).unwrap();
+                if assertions.peek().is_some() {
+                    write!(result, ", ").unwrap();
+                }
+            }
+            write!(result, ") => ").unwrap();
+
+            write!(result, "{}", pretty_print_ty(type_arena, *ty)).unwrap();
+
+            result
         }
     }
 }
 
-pub fn pretty_print_assertions(type_arena: &Arena<Type>, assertions: &[Assertion]) -> String {
+pub fn pretty_print_assertion(type_arena: &Arena<Type>, assertion: &Assertion) -> String {
     let mut result = String::new();
 
-    let mut assertions = assertions.iter().peekable();
-
-    write!(result, "(").unwrap();
-    while let Some(assertion) = assertions.next() {
-        write!(result, "{}", assertion.name).unwrap();
-        let mut arguments = assertion.arguments.iter().peekable();
-        while let Some(argument) = arguments.next() {
-            write!(result, " {}", pretty_print_ty(type_arena, *argument)).unwrap();
-            if arguments.peek().is_some() {
-                write!(result, ", ").unwrap();
-            }
-        }
-        if assertions.peek().is_some() {
+    write!(result, "{}", assertion.name).unwrap();
+    let mut arguments = assertion.arguments.iter().peekable();
+    while let Some(argument) = arguments.next() {
+        write!(result, " {}", pretty_print_ty(type_arena, *argument)).unwrap();
+        if arguments.peek().is_some() {
             write!(result, ", ").unwrap();
         }
     }
-    write!(result, ")").unwrap();
 
     result
 }

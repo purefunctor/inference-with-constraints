@@ -3,6 +3,7 @@ pub mod traversal;
 
 use std::hash::Hash;
 
+use im::Vector;
 use iwc_arena::Idx;
 use smol_str::SmolStr;
 
@@ -16,7 +17,7 @@ pub struct TypeVariableBinder {
 #[derive(Debug, Clone)]
 pub struct Assertion {
     pub name: SmolStr,
-    pub arguments: Vec<TypeIdx>,
+    pub arguments: Vector<TypeIdx>,
 }
 
 #[derive(Debug, Clone)]
@@ -32,20 +33,20 @@ pub enum Type {
         name: usize,
     },
     Function {
-        arguments: Vec<TypeIdx>,
+        arguments: Vector<TypeIdx>,
         result: TypeIdx,
     },
     Application {
         function: TypeIdx,
-        arguments: Vec<TypeIdx>,
+        arguments: Vector<TypeIdx>,
     },
     Forall {
-        variables: Vec<TypeVariableBinder>,
+        variables: Vector<TypeVariableBinder>,
         rank: usize,
         ty: TypeIdx,
     },
     Constrained {
-        assertions: Vec<Assertion>,
+        assertions: Vector<Assertion>,
         ty: TypeIdx,
     },
 }
@@ -59,16 +60,16 @@ impl Type {
 #[derive(Debug, Clone)]
 pub struct Instance {
     pub assertion: Assertion,
-    pub dependencies: Vec<Assertion>,
+    pub dependencies: Vector<Assertion>,
 }
 
 #[derive(Debug, Clone)]
 pub struct FunctionalDependency {
-    pub domain: Vec<usize>,
-    pub codomain: Vec<usize>,
+    pub domain: Vector<usize>,
+    pub codomain: Vector<usize>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Class {
-    pub functional_dependencies: Vec<FunctionalDependency>,
+    pub functional_dependencies: Vector<FunctionalDependency>,
 }

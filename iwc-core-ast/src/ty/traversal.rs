@@ -9,8 +9,8 @@ pub trait Traversal: Sized {
         default_traverse_ty(self, ty_idx)
     }
 
-    fn traverse_assertions(&mut self, assertions: Vec<Assertion>) -> Vec<Assertion> {
-        default_traverse_assertions(self, assertions)
+    fn traverse_assertion(&mut self, assertion: &Assertion) -> Assertion {
+        default_traverse_assertion(self, assertion)
     }
 }
 
@@ -23,7 +23,7 @@ pub fn default_traverse_ty<T: Traversal>(traversal: &mut T, ty_idx: TypeIdx) -> 
             let mut arguments = arguments.clone();
             let result = *result;
 
-            for argument in &mut arguments {
+            for argument in arguments.iter_mut() {
                 *argument = traversal.traverse_ty(*argument);
             }
             let result = traversal.traverse_ty(result);
@@ -40,7 +40,7 @@ pub fn default_traverse_ty<T: Traversal>(traversal: &mut T, ty_idx: TypeIdx) -> 
             let mut arguments = arguments.clone();
 
             let function = traversal.traverse_ty(function);
-            for argument in &mut arguments {
+            for argument in arguments.iter_mut() {
                 *argument = traversal.traverse_ty(*argument);
             }
 
@@ -68,10 +68,12 @@ pub fn default_traverse_ty<T: Traversal>(traversal: &mut T, ty_idx: TypeIdx) -> 
             })
         }
         Type::Constrained { assertions, ty } => {
-            let assertions = assertions.clone();
+            let mut assertions = assertions.clone();
             let ty = *ty;
 
-            let assertions = traversal.traverse_assertions(assertions);
+            for assertion in assertions.iter_mut() {
+                *assertion = traversal.traverse_assertion(&assertion)
+            }
             let ty = traversal.traverse_ty(ty);
 
             traversal
@@ -81,14 +83,13 @@ pub fn default_traverse_ty<T: Traversal>(traversal: &mut T, ty_idx: TypeIdx) -> 
     }
 }
 
-pub fn default_traverse_assertions<T: Traversal>(
+pub fn default_traverse_assertion<T: Traversal>(
     traversal: &mut T,
-    mut assertions: Vec<Assertion>,
-) -> Vec<Assertion> {
-    for assertion in &mut assertions {
-        for argument in &mut assertion.arguments {
-            *argument = traversal.traverse_ty(*argument);
-        }
+    assertion: &Assertion,
+) -> Assertion {
+    let mut assertion = assertion.clone();
+    for argument in assertion.arguments.iter_mut() {
+        *argument = traversal.traverse_ty(*argument);
     }
-    assertions
+    assertion
 }
