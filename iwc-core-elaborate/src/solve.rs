@@ -3,7 +3,7 @@ use std::{
     iter::zip,
 };
 
-use iwc_core_ast::ty::{pretty::pretty_print_assertions, Assertion, TypeIdx};
+use iwc_core_ast::ty::{Assertion, TypeIdx};
 use iwc_core_constraint::Constraint;
 use iwc_core_error::UnifyError;
 
@@ -45,17 +45,11 @@ impl<'context> Solve<'context> {
         while let Ok(constraint) = self.context.constraints.pop() {
             match constraint {
                 Constraint::ClassEntail(index, assertion) => {
-                    let a = pretty_print_assertions(
-                        &self.context.volatile.type_arena,
-                        &[assertion.clone()],
-                    );
-                    println!("entail: {a}");
                     match Entail::new(self.context).entail(&assertion) {
                         EntailResult::Solved {
                             evidence,
                             instance_assertion,
                         } => {
-                            println!("{a} is solved.");
                             self.entailment_evidences.insert(index, evidence);
                             for (t_idx, u_idx) in
                                 zip(&assertion.arguments, &instance_assertion.arguments)
@@ -68,7 +62,6 @@ impl<'context> Solve<'context> {
                             instance_assertion,
                             instance_dependencies,
                         } => {
-                            println!("{a} requires dependencies.");
                             self.entailment_evidences.insert(index, evidence);
                             for (t_idx, u_idx) in
                                 zip(&assertion.arguments, &instance_assertion.arguments)
@@ -86,7 +79,6 @@ impl<'context> Solve<'context> {
                             }
                         }
                         EntailResult::Deferred { needs_solution } => {
-                            println!("{a} is deferred.");
                             self.entailment_deferred.push(DeferredAssertion {
                                 index,
                                 assertion,

@@ -4,7 +4,6 @@ use std::{
 };
 
 use iwc_core_ast::ty::{
-    pretty::{pretty_print_assertions, pretty_print_ty},
     traversal::{default_traverse_ty, Traversal},
     Assertion, FunctionalDependency, Type, TypeIdx,
 };
@@ -46,11 +45,6 @@ impl<'context> Entail<'context> {
         t_idx: TypeIdx,
         u_idx: TypeIdx,
     ) -> bool {
-        println!(
-            "match_argument: {} = {}",
-            pretty_print_ty(&self.context.volatile.type_arena, t_idx),
-            pretty_print_ty(&self.context.volatile.type_arena, u_idx)
-        );
         match (
             &self.context.volatile.type_arena[t_idx],
             &self.context.volatile.type_arena[u_idx],
@@ -171,8 +165,6 @@ impl<'context> Entail<'context> {
             .unwrap();
 
         for instance in instances {
-            println!("instance: {:?}", instance);
-
             let mut substitutions = HashMap::new();
 
             let instance_arguments = &instance.assertion.arguments;
@@ -195,14 +187,6 @@ impl<'context> Entail<'context> {
             if instance.dependencies.is_empty() {
                 let instance_assertion = sgf.on_assertion(&instance.assertion);
 
-                println!(
-                    "{}",
-                    pretty_print_assertions(
-                        &self.context.volatile.type_arena,
-                        &[instance_assertion.clone()],
-                    )
-                );
-
                 let needs_solution = self.needs_solution(assertion);
                 if !needs_solution.is_empty() {
                     return EntailResult::Deferred { needs_solution };
@@ -219,26 +203,11 @@ impl<'context> Entail<'context> {
             } else {
                 let instance_assertion = sgf.on_assertion(&instance.assertion);
 
-                println!(
-                    "after sgf: {}",
-                    pretty_print_assertions(
-                        &sgf.context.volatile.type_arena,
-                        &[instance_assertion.clone()],
-                    )
-                );
-
                 let mut instance_dependencies = vec![];
                 let mut dictionary_dependencies = vec![];
                 for dependency in &instance.dependencies {
                     let index = sgf.context.fresh_index();
                     let dependency = sgf.on_assertion(dependency);
-                    println!(
-                        "after sgf: {}",
-                        pretty_print_assertions(
-                            &sgf.context.volatile.type_arena,
-                            &[dependency.clone()],
-                        )
-                    );
                     instance_dependencies.push((index, dependency));
                     dictionary_dependencies.push(index);
                 }

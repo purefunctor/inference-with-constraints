@@ -1,4 +1,5 @@
 use anyhow::Context;
+use im::Vector;
 use iwc_core_ast::{
     expr::{Expr, ExprIdx},
     ty::{Type, TypeIdx},
@@ -54,7 +55,7 @@ impl<'context> Infer<'context> {
                 let function = self.infer(function)?;
                 let function = self.as_instantiate().instantiate(function);
 
-                let arguments: Vec<TypeIdx> = arguments
+                let arguments: Vector<TypeIdx> = arguments
                     .into_iter()
                     .map(|argument| self.infer(argument))
                     .collect::<anyhow::Result<_>>()?;

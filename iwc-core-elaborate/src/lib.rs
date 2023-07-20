@@ -7,8 +7,9 @@ pub mod unify;
 
 #[cfg(test)]
 mod tests {
+    use im::vector;
     use iwc_core_ast::ty::{
-        pretty::{pretty_print_assertions, pretty_print_ty},
+        pretty::{pretty_print_assertion, pretty_print_ty},
         Assertion, Class, FunctionalDependency, Instance, Type,
     };
     use iwc_core_constraint::Constraint;
@@ -27,7 +28,7 @@ mod tests {
         context.environment.classes.insert(
             "Eq".into(),
             Class {
-                functional_dependencies: vec![],
+                functional_dependencies: vector![],
             },
         );
 
@@ -36,9 +37,9 @@ mod tests {
             vec![Instance {
                 assertion: Assertion {
                     name: "Eq".into(),
-                    arguments: vec![int],
+                    arguments: vector![int],
                 },
-                dependencies: vec![],
+                dependencies: vector![],
             }],
         );
 
@@ -49,7 +50,7 @@ mod tests {
                 index,
                 Assertion {
                     name: "Eq".into(),
-                    arguments: vec![int],
+                    arguments: vector![int],
                 },
             ))
             .unwrap();
@@ -81,16 +82,16 @@ mod tests {
             vec![Instance {
                 assertion: Assertion {
                     name: "Eq".into(),
-                    arguments: vec![int],
+                    arguments: vector![int],
                 },
-                dependencies: vec![],
+                dependencies: vector![],
             }],
         );
 
         context.environment.classes.insert(
             "Eq".into(),
             Class {
-                functional_dependencies: vec![],
+                functional_dependencies: vector![],
             },
         );
 
@@ -102,7 +103,7 @@ mod tests {
                 index,
                 Assertion {
                     name: "Eq".into(),
-                    arguments: vec![u_one],
+                    arguments: vector![u_one],
                 },
             ))
             .unwrap();
@@ -132,7 +133,7 @@ mod tests {
         context.environment.classes.insert(
             "Eq".into(),
             Class {
-                functional_dependencies: vec![],
+                functional_dependencies: vector![],
             },
         );
 
@@ -152,7 +153,7 @@ mod tests {
 
         let array_a = context.volatile.type_arena.allocate(Type::Application {
             function: array,
-            arguments: vec![a],
+            arguments: vector![a],
         });
 
         context.environment.instances.insert(
@@ -161,26 +162,26 @@ mod tests {
                 Instance {
                     assertion: Assertion {
                         name: "Eq".into(),
-                        arguments: vec![array_a],
+                        arguments: vector![array_a],
                     },
-                    dependencies: vec![Assertion {
+                    dependencies: vector![Assertion {
                         name: "Eq".into(),
-                        arguments: vec![a],
+                        arguments: vector![a],
                     }],
                 },
                 Instance {
                     assertion: Assertion {
                         name: "Eq".into(),
-                        arguments: vec![int],
+                        arguments: vector![int],
                     },
-                    dependencies: vec![],
+                    dependencies: vector![],
                 },
             ],
         );
 
         let array_int = context.volatile.type_arena.allocate(Type::Application {
             function: array,
-            arguments: vec![int],
+            arguments: vector![int],
         });
 
         let index = context.fresh_index();
@@ -190,7 +191,7 @@ mod tests {
                 index,
                 Assertion {
                     name: "Eq".into(),
-                    arguments: vec![array_int],
+                    arguments: vector![array_int],
                 },
             ))
             .unwrap();
@@ -209,9 +210,9 @@ mod tests {
         context.environment.classes.insert(
             "Append".into(),
             Class {
-                functional_dependencies: vec![FunctionalDependency {
-                    domain: vec![0, 1],
-                    codomain: vec![2],
+                functional_dependencies: vector![FunctionalDependency {
+                    domain: vector![0, 1],
+                    codomain: vector![2],
                 }],
             },
         );
@@ -253,11 +254,11 @@ mod tests {
             });
             let cons_x_xs = context.volatile.type_arena.allocate(Type::Application {
                 function: cons,
-                arguments: vec![x, xs],
+                arguments: vector![x, xs],
             });
             let cons_x_zs = context.volatile.type_arena.allocate(Type::Application {
                 function: cons,
-                arguments: vec![x, zs],
+                arguments: vector![x, zs],
             });
             context.environment.instances.insert(
                 "Append".into(),
@@ -265,18 +266,18 @@ mod tests {
                     Instance {
                         assertion: Assertion {
                             name: "Append".into(),
-                            arguments: vec![nil, ys, ys],
+                            arguments: vector![nil, ys, ys],
                         },
-                        dependencies: vec![],
+                        dependencies: vector![],
                     },
                     Instance {
                         assertion: Assertion {
                             name: "Append".into(),
-                            arguments: vec![cons_x_xs, ys, cons_x_zs],
+                            arguments: vector![cons_x_xs, ys, cons_x_zs],
                         },
-                        dependencies: vec![Assertion {
+                        dependencies: vector![Assertion {
                             name: "Append".into(),
-                            arguments: vec![xs, ys, zs],
+                            arguments: vector![xs, ys, zs],
                         }],
                     },
                 ],
@@ -287,42 +288,38 @@ mod tests {
 
         let cons_0_nil = context.volatile.type_arena.allocate(Type::Application {
             function: cons,
-            arguments: vec![zero, nil],
+            arguments: vector![zero, nil],
         });
 
         let cons_1_nil = context.volatile.type_arena.allocate(Type::Application {
             function: cons,
-            arguments: vec![one, nil],
+            arguments: vector![one, nil],
         });
+
+        let cons_1_0_nil = context.volatile.type_arena.allocate(Type::Application {
+            function: cons,
+            arguments: vector![one, cons_0_nil],
+        });
+
+        let assertion = Assertion {
+            name: "Append".into(),
+            arguments: vector![cons_1_0_nil, cons_1_nil, u],
+        };
+
+        println!(
+            "{}",
+            pretty_print_assertion(&context.volatile.type_arena, &assertion)
+        );
 
         let index = context.fresh_index();
         context
             .constraints
-            .push(Constraint::ClassEntail(
-                index,
-                Assertion {
-                    name: "Append".into(),
-                    arguments: vec![cons_0_nil, cons_1_nil, u],
-                },
-            ))
+            .push(Constraint::ClassEntail(index, assertion))
             .unwrap();
 
         let mut solve = Solve::new(&mut context);
 
         solve.step();
-
-        dbg!(&solve.entailment_evidences);
-
-        println!(
-            "{}",
-            pretty_print_assertions(
-                &solve.context.volatile.type_arena,
-                &[Assertion {
-                    name: "Append".into(),
-                    arguments: vec![cons_0_nil, cons_1_nil, u],
-                }]
-            )
-        );
 
         for (u, t_idx) in &solve.unification_solved {
             println!(

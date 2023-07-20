@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use im::Vector;
 use iwc_arena::Arena;
 use iwc_core_ast::ty::{
     traversal::{default_traverse_ty, Traversal},
@@ -19,7 +20,7 @@ impl<'context> Instantiate<'context> {
         Self { context }
     }
 
-    fn as_substitute(&mut self, variables: Vec<TypeVariableBinder>, rank: usize) -> Substitute {
+    fn as_substitute(&mut self, variables: Vector<TypeVariableBinder>, rank: usize) -> Substitute {
         Substitute::new(self.context, variables, rank)
     }
 
@@ -36,12 +37,14 @@ impl<'context> Instantiate<'context> {
 
             if let Type::Constrained { assertions, ty } = &self.context.volatile.type_arena[ty_idx]
             {
-                let assertions = assertions.clone();
+                let mut assertions = assertions.clone();
                 let ty_idx = *ty;
 
                 let mut substitute = self.as_substitute(variables, rank);
 
-                let assertions = substitute.traverse_assertions(assertions);
+                for assertion in assertions.iter_mut() {
+                    *assertion = substitute.traverse_assertion(assertion);
+                }
                 let ty_idx = substitute.traverse_ty(ty_idx);
 
                 for assertion in assertions {
@@ -75,7 +78,7 @@ struct Substitute<'context> {
 impl<'context> Substitute<'context> {
     fn new(
         context: &'context mut Context,
-        variables: Vec<TypeVariableBinder>,
+        variables: Vector<TypeVariableBinder>,
         rank: usize,
     ) -> Self {
         let substitutions = variables

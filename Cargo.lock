@@ -110,6 +110,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "concurrent-queue",
+ "im",
  "iwc-arena",
  "iwc-core-ast",
  "iwc-core-constraint",

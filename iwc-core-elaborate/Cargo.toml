@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.71"
 concurrent-queue = "2.2.0"
+im = "15.1.0"
 iwc-arena = { version = "0.1.0", path = "../iwc-arena" }
 iwc-core-ast = { version = "0.1.0", path = "../iwc-core-ast" }
 iwc-core-constraint = { version = "0.1.0", path = "../iwc-core-constraint" }
