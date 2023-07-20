@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use im::Vector;
 use iwc_arena::Arena;
 use iwc_core_ast::ty::{
     traversal::{default_traverse_ty, Traversal},
@@ -20,10 +19,6 @@ impl<'context> Instantiate<'context> {
         Self { context }
     }
 
-    fn as_substitute(&mut self, variables: Vector<TypeVariableBinder>, rank: usize) -> Substitute {
-        Substitute::new(self.context, variables, rank)
-    }
-
     pub fn instantiate(&mut self, t_idx: TypeIdx) -> TypeIdx {
         if let Type::Forall {
             variables,
@@ -40,7 +35,8 @@ impl<'context> Instantiate<'context> {
                 let mut assertions = assertions.clone();
                 let ty_idx = *ty;
 
-                let mut substitute = self.as_substitute(variables, rank);
+                let mut substitute =
+                    Substitute::from_type_variable_binders(self.context, variables, rank);
 
                 for assertion in assertions.iter_mut() {
                     *assertion = substitute.traverse_assertion(assertion);
@@ -53,7 +49,8 @@ impl<'context> Instantiate<'context> {
 
                 ty_idx
             } else {
-                self.as_substitute(variables, rank).traverse_ty(ty_idx)
+                Substitute::from_type_variable_binders(self.context, variables, rank)
+                    .traverse_ty(ty_idx)
             }
         } else {
             t_idx
@@ -71,28 +68,36 @@ impl<'context> Instantiate<'context> {
 
 struct Substitute<'context> {
     context: &'context mut Context,
-    substitutions: HashMap<SmolStr, TypeIdx>,
-    rank: usize,
+    substitutions: HashMap<(SmolStr, usize), TypeIdx>,
 }
 
 impl<'context> Substitute<'context> {
     fn new(
         context: &'context mut Context,
-        variables: Vector<TypeVariableBinder>,
-        rank: usize,
+        substitutions: HashMap<(SmolStr, usize), TypeIdx>,
     ) -> Self {
+        Self {
+            context,
+            substitutions,
+        }
+    }
+
+    fn from_type_variable_binders<V>(
+        context: &'context mut Context,
+        variables: V,
+        rank: usize,
+    ) -> Self
+    where
+        V: IntoIterator<Item = TypeVariableBinder>,
+    {
         let substitutions = variables
             .into_iter()
             .map(|TypeVariableBinder { name }| {
                 let index = context.fresh_unification();
-                (name, index)
+                ((name, rank), index)
             })
             .collect();
-        Self {
-            context,
-            substitutions,
-            rank,
-        }
+        Self::new(context, substitutions)
     }
 }
 
@@ -103,8 +108,8 @@ impl<'context> Traversal for Substitute<'context> {
 
     fn traverse_ty(&mut self, ty_idx: TypeIdx) -> TypeIdx {
         match &self.context.volatile.type_arena[ty_idx] {
-            Type::Variable { name, rank } if self.rank == *rank => {
-                if let Some(&name) = self.substitutions.get(name) {
+            Type::Variable { name, rank } => {
+                if let Some(&name) = self.substitutions.get(&(name.clone(), *rank)) {
                     name
                 } else {
                     ty_idx
