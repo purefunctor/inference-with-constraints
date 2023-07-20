@@ -1,4 +1,3 @@
-pub mod hash;
 pub mod pretty;
 pub mod traversal;
 
