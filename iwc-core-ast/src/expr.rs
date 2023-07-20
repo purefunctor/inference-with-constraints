@@ -1,6 +1,7 @@
 pub mod pretty;
 pub mod traversal;
 
+use im::Vector;
 use iwc_arena::Idx;
 use smol_str::SmolStr;
 
@@ -16,10 +17,10 @@ pub enum Expr {
     },
     Application {
         function: ExprIdx,
-        arguments: Vec<ExprIdx>,
+        arguments: Vector<ExprIdx>,
     },
     Lambda {
-        arguments: Vec<SmolStr>,
+        arguments: Vector<SmolStr>,
         body: ExprIdx,
     },
 }

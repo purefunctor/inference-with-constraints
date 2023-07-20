@@ -22,7 +22,7 @@ pub fn default_traverse_expr<T: Traversal>(traversal: &mut T, expr_idx: ExprIdx)
             let mut arguments = arguments.clone();
 
             let function = traversal.traverse_expr(function);
-            for argument in &mut arguments {
+            for argument in arguments.iter_mut() {
                 *argument = traversal.traverse_expr(*argument);
             }
 
