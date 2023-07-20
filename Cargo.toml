@@ -6,3 +6,4 @@ members = [
     "iwc-core-elaborate",
     "iwc-core-error",
 ]
+resolver = "1"
