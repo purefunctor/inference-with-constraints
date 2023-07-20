@@ -74,12 +74,8 @@ pub fn pretty_print_assertion(type_arena: &Arena<Type>, assertion: &Assertion) -
     let mut result = String::new();
 
     write!(result, "{}", assertion.name).unwrap();
-    let mut arguments = assertion.arguments.iter().peekable();
-    while let Some(argument) = arguments.next() {
+    for argument in assertion.arguments.iter() {
         write!(result, " {}", pretty_print_ty(type_arena, *argument)).unwrap();
-        if arguments.peek().is_some() {
-            write!(result, ", ").unwrap();
-        }
     }
 
     result
